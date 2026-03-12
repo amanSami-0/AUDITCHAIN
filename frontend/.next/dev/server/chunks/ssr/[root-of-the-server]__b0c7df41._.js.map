@@ -1,0 +1,6 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 18, "column": 0}, "map": {"version":3,"sources":["file:///Users/amansami/Documents/DEV/AUDIT%20CHAIN/frontend/app/page.tsx"],"sourcesContent":["import Link from \"next/link\";\n\nexport default function Home() {\n  return (\n    <main className=\"flex flex-col items-center justify-center h-screen gap-4\">\n\n      <h1 className=\"text-3xl font-bold\">\n        Welcome\n      </h1>\n\n      <Link\n        href=\"/login\"\n        className=\"bg-blue-500 text-white px-4 py-2 rounded\"\n      >\n        Go to Login\n      </Link>\n\n    </main>\n  );\n}"],"names":[],"mappings":";;;;;AAAA;;;AAEe,SAAS;IACtB,qBACE,8RAAC;QAAK,WAAU;;0BAEd,8RAAC;gBAAG,WAAU;0BAAqB;;;;;;0BAInC,8RAAC,0OAAI;gBACH,MAAK;gBACL,WAAU;0BACX;;;;;;;;;;;;AAMP"}}]
+}

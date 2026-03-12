@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": [],
+  "sections": [
+    {"offset": {"line": 4, "column": 0}, "map": {"version":3,"sources":["file:///Users/amansami/Documents/DEV/AUDIT%20CHAIN/frontend/app/layout.tsx"],"sourcesContent":["export const metadata = {\n  title: \"My App\",\n  description: \"Next.js Login Example\",\n};\n\nexport default function RootLayout({\n  children,\n}: {\n  children: React.ReactNode;\n}) {\n  return (\n    <html lang=\"en\">\n      <body>\n        {children}\n      </body>\n    </html>\n  );\n}"],"names":[],"mappings":";;;;;;;;AAAO,MAAM,WAAW;IACtB,OAAO;IACP,aAAa;AACf;AAEe,SAAS,WAAW,EACjC,QAAQ,EAGT;IACC,qBACE,8RAAC;QAAK,MAAK;kBACT,cAAA,8RAAC;sBACE;;;;;;;;;;;AAIT"}},
+    {"offset": {"line": 36, "column": 0}, "map": {"version":3,"sources":["file:///Users/amansami/Documents/DEV/AUDIT%20CHAIN/frontend/node_modules/next/src/server/route-modules/app-page/vendored/rsc/react-jsx-dev-runtime.ts"],"sourcesContent":["module.exports = (\n  require('../../module.compiled') as typeof import('../../module.compiled')\n).vendored['react-rsc']!.ReactJsxDevRuntime\n"],"names":["module","exports","require","vendored","ReactJsxDevRuntime"],"mappings":"AAAAA,OAAOC,OAAO,GACZC,QAAQ,+JACRC,QAAQ,CAAC,YAAY,CAAEC,kBAAkB","ignoreList":[0]}}]
+}
