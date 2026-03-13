@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+
+<title>Audit Logs</title>
+
+<link rel="stylesheet"
+href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css">
+
+</head>
+
+<body>
+
+<div class="container mt-5">
+
+<h2>Audit Logs</h2>
+
+<table class="table table-bordered">
+
+<thead>
+
+<tr>
+
+<th>ID</th>
+<th>User</th>
+<th>Action</th>
+<th>Attribute</th>
+<th>IP</th>
+<th>Time</th>
+<th>Hash</th>
+
+</tr>
+
+</thead>
+
+<tbody>
+
+<% logs.forEach(log=>{ %>
+
+<tr>
+
+<td><%=log.id%></td>
+
+<td><%=log.user_id%></td>
+
+<td><%=log.action%></td>
+
+<td><%=log.attribute_name%></td>
+
+<td><%=log.ip_address%></td>
+
+<td><%=log.createdAt%></td>
+
+<td style="font-size:10px"><%=log.current_hash%></td>
+
+</tr>
+
+<% }) %>
+
+</tbody>
+
+</table>
+
+</div>
+
+</body>
+
+</html>
