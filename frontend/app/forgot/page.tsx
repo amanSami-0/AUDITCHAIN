@@ -6,13 +6,15 @@ import { fetchApi } from "../lib/api";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
-export default function Home() {
+export default function ForgotPassword() {
   const router = useRouter();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [rememberMe, setRememberMe] = useState(false);
+  const [confirmPassword, setConfirmPassword] = useState("");
+  
   const [errorMsg, setErrorMsg] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
   const [loading, setLoading] = useState(false);
   
   const buttonRef = useRef(null);
@@ -33,23 +35,32 @@ export default function Home() {
     });
   };
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleReset = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMsg("");
+    setSuccessMsg("");
+
+    if (password !== confirmPassword) {
+        setErrorMsg("Passwords do not match");
+        return;
+    }
+
     setLoading(true);
 
     try {
-      // The proxy rewrites this to http://localhost:3000/login
-      const data = await fetchApi('/login', {
+      await fetchApi('/forgot', {
         method: 'POST',
         body: JSON.stringify({ email, password })
       });
 
-      // Login successful! Save token or user intent if needed, then redirect
-      console.log('Login successful', data);
-      router.push('/profile'); // Redirect to profile or dashboard page
+      setSuccessMsg("Password successfully reset! Redirecting...");
+      
+      setTimeout(() => {
+        router.push('/login');
+      }, 2000);
+
     } catch (err: any) {
-      setErrorMsg(err.message || "Failed to login. Please try again.");
+      setErrorMsg(err.message || "Failed to reset password. Ensure your email is correct.");
     } finally {
       setLoading(false);
     }
@@ -61,44 +72,48 @@ export default function Home() {
 
      <div className="absolute inset-0 pointer-events-none overflow-hidden">
 
-
       <div className="absolute top-[48%] left-[30%] -translate-x-1/2 -translate-y-1/2
         w-[600px] h-[600px] rounded-full
         bg-[radial-gradient(circle,_rgba(176,58,46,0.70)_0%,_rgba(176,58,46,0.40)_35%,_rgba(176,58,46,0.12)_60%,_transparent_75%)]
         blur-[140px]" />
 
-  <div className="absolute top-[70%] left-[72%] -translate-x-1/2 -translate-y-1/2
+    <div className="absolute top-[70%] left-[72%] -translate-x-1/2 -translate-y-1/2
           w-[600px] h-[600px] rounded-full
           bg-[radial-gradient(circle,_rgba(255,255,255,0.35)_0%,_rgba(255,255,255,0.18)_35%,_rgba(255,255,255,0.08)_55%,_transparent_70%)]
           blur-[150px]" />
     </div>
-      {/* Login Card */}
+      {/* Reset Card */}
       <main className="relative z-10 w-full max-w-md px-6">
          <div className="bg-white/[0.03] backdrop-blur-2xl border border-white/10 rounded-[32px] p-8 md:p-12 shadow-2xl opacity-0 animate-[fadeUp_0.6s_ease-out_0.1s_forwards]">
           <header className="text-center mb-10">
-            <h1 className="text-4xl font-light text-white tracking-tight mb-2">
-              Login
+            <h1 className="text-3xl font-light text-white tracking-tight mb-2">
+              Reset Password
             </h1>
             <p className="text-neutral-400 text-sm">
-              Welcome back, please enter your details.
+              Enter your email and a new password.
             </p>
           </header>
 
-          <form className="space-y-6" onSubmit={handleLogin}>
+          <form className="space-y-6" onSubmit={handleReset}>
             
             {errorMsg && (
               <div className="p-3 bg-red-500/20 border border-red-500/50 rounded-xl text-red-400 text-sm text-center">
                 {errorMsg}
               </div>
             )}
+            
+            {successMsg && (
+              <div className="p-3 bg-green-500/20 border border-green-500/50 rounded-xl text-green-400 text-sm text-center">
+                {successMsg}
+              </div>
+            )}
 
-            {/* Email (replaces Username for compatibility with backend) */}
             <div className="space-y-2">
               <label
                 htmlFor="email"
                 className="block text-[10px] font-semibold text-neutral-500 uppercase tracking-[0.2em] ml-1"
               >
-                Email
+                Account Email
               </label>
 
               <input
@@ -112,13 +127,12 @@ export default function Home() {
               />
             </div>
 
-            {/* Password */}
             <div className="space-y-2">
               <label
                 htmlFor="password"
                 className="block text-[10px] font-semibold text-neutral-500 uppercase tracking-[0.2em] ml-1"
               >
-                Password
+                New Password
               </label>
 
               <input
@@ -126,48 +140,25 @@ export default function Home() {
                 id="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter password"
+                placeholder="Enter new password"
                 required
                 className="w-full h-12 px-4 bg-white/[0.05] border border-white/10 rounded-xl text-white placeholder-neutral-600 focus:outline-none focus:border-white/30 focus:bg-white/[0.08]"
               />
             </div>
 
-            {/* Remember + Forgot */}
-            <div className="flex items-center justify-between text-xs">
-
-              <label className="flex items-center space-x-2 cursor-pointer group">
-                <div className="relative flex items-center justify-center">
-
-                  <input
-                    type="checkbox"
-                    checked={rememberMe}
-                    onChange={() => setRememberMe(!rememberMe)}
-                    className="peer sr-only"
-                  />
-
-                  <div className="w-4 h-4 border border-white/20 rounded bg-white/5 peer-checked:bg-white peer-checked:border-white" />
-
-                  <svg
-                    className={`absolute w-3 h-3 text-black ${rememberMe ? "opacity-100" : "opacity-0"}`}
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={4}
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                  </svg>
-
-                </div>
-
-                <span className="text-neutral-400 group-hover:text-white">
-                  Remember Me
-                </span>
+            <div className="space-y-2">
+              <label htmlFor="confirmPassword" className="block text-[10px] font-semibold text-neutral-500 uppercase tracking-[0.2em] ml-1">
+                Confirm Password
               </label>
-
-              <Link href="/forgot" className="text-neutral-400 hover:text-white">
-                Forgot Password?
-              </Link>
-
+              <input
+                type="password"
+                id="confirmPassword"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Confirm new password"
+                required
+                className="w-full h-11 px-4 bg-white/[0.05] border border-white/10 rounded-xl text-white placeholder-neutral-600 focus:outline-none focus:border-white/30 focus:bg-white/[0.08]"
+              />
             </div>
 
             {/* Submit */}
@@ -176,18 +167,18 @@ export default function Home() {
               onMouseEnter={handleMouseEnter}
               onMouseLeave={handleMouseLeave}
               type="submit"
-              disabled={loading}
-              className="w-full h-12 bg-white text-black font-semibold rounded-xl transition-colors hover:bg-neutral-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              disabled={loading || !!successMsg}
+              className="w-full h-12 bg-white text-black font-semibold rounded-xl transition-colors hover:bg-neutral-200 disabled:opacity-50 disabled:cursor-not-allowed mt-2"
             >
-              {loading ? "Signing In..." : "Sign In"}
+              {loading ? "Resetting..." : "Reset Password"}
             </button>
 
           </form>
 
           <footer className="mt-10 text-center text-sm text-neutral-500">
-            Don&apos;t have an account?{" "}
-            <Link href="/signup" className="text-neutral-300 hover:text-white font-medium underline underline-offset-4">
-              Sign up
+            Remembered your password?{" "}
+            <Link href="/login" className="text-neutral-300 hover:text-white font-medium underline underline-offset-4">
+              Return to Login
             </Link>
           </footer>
 

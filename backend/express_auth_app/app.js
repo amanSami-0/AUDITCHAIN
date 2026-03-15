@@ -2,7 +2,7 @@ const express = require("express")
 const session = require("express-session")
 const cookieParser = require("cookie-parser")
 const bodyParser = require("body-parser")
-const flash = require("connect-flash")
+const cors = require("cors")
 const path = require("path")
 
 const sequelize = require("./config/db")
@@ -14,11 +14,10 @@ const audit = require("./auditchainSDK")
 const app = express()
 
 /* =====================
-   VIEW ENGINE
+   CORS
 ===================== */
 
-app.set("views", path.join(__dirname, "views"))
-app.set("view engine", "ejs")
+app.use(cors({ origin: 'http://localhost:3001', credentials: true }))
 
 /* =====================
    STATIC FILES
@@ -31,6 +30,7 @@ app.use(express.static(path.join(__dirname, "public")))
 ===================== */
 
 app.use(bodyParser.urlencoded({ extended: true }))
+app.use(express.json())
 
 /* =====================
    COOKIE PARSER
@@ -48,17 +48,7 @@ app.use(session({
     saveUninitialized: true
 }))
 
-/* =====================
-   FLASH MESSAGES
-===================== */
 
-app.use(flash())
-
-app.use((req, res, next) => {
-    res.locals.success = req.flash("success")
-    res.locals.error = req.flash("error")
-    next()
-})
 
 /* =====================
    AUDIT SDK
@@ -73,6 +63,10 @@ app.use("/audit", audit.dashboard)
 /* =====================
    ROUTES
 ===================== */
+
+app.get("/", (req, res) => {
+    res.json({ status: "AuditChain API is running. Please access the App via the Next.js Frontend." });
+});
 
 app.use("/", authRoutes)
 
