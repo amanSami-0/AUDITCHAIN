@@ -17,8 +17,14 @@ interface AuditLog {
   createdAt: string;
 }
 
+interface AggregatedAuditLog extends Omit<AuditLog, 'attribute_name' | 'id'> {
+  id: string; // Group ID
+  attributes: string[];
+  count: number;
+}
+
 export default function AuditLogs() {
-  const [logs, setLogs] = useState<AuditLog[]>([]);
+  const [logs, setLogs] = useState<AggregatedAuditLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
 
@@ -26,8 +32,46 @@ export default function AuditLogs() {
     const fetchLogs = async () => {
       try {
         const data = await fetchApi('/audit');
-        setLogs(data.logs || []);
-      } catch (err: any) {
+        const rawLogs: AuditLog[] = data.logs || [];
+        
+        // Aggregate Logs
+        const aggregated: AggregatedAuditLog[] = [];
+        
+        rawLogs.forEach(log => {
+          if (aggregated.length === 0) {
+            aggregated.push({
+              ...log,
+              id: log.id.toString(),
+              attributes: log.attribute_name ? [log.attribute_name] : [],
+              count: 1
+            });
+            return;
+          }
+
+          const lastGroup = aggregated[aggregated.length - 1];
+          const timeDiff = Math.abs(new Date(lastGroup.createdAt).getTime() - new Date(log.createdAt).getTime());
+          const isSameAction = lastGroup.action === log.action;
+          const isSameUser = lastGroup.user_id === log.user_id;
+          const isWithin15Mins = timeDiff <= 15 * 60 * 1000;
+
+          if (isSameAction && isSameUser && isWithin15Mins) {
+            lastGroup.count += 1;
+            if (log.attribute_name && !lastGroup.attributes.includes(log.attribute_name)) {
+              lastGroup.attributes.push(log.attribute_name);
+            }
+          } else {
+            aggregated.push({
+              ...log,
+              id: log.id.toString(),
+              attributes: log.attribute_name ? [log.attribute_name] : [],
+              count: 1
+            });
+          }
+        });
+
+        setLogs(aggregated);
+      } catch (err: unknown) {
+        console.error("Failed to load audit logs", err);
         setErrorMsg("Failed to load audit logs. Are you sure the backend SDK is logging?");
       } finally {
         setLoading(false);
@@ -61,11 +105,6 @@ export default function AuditLogs() {
     } catch {
       return "Unknown Device";
     }
-  };
-
-  const formatShortHash = (hash: string) => {
-    if (!hash) return "-";
-    return hash.substring(0, 10) + "...";
   };
 
   return (
@@ -131,7 +170,7 @@ export default function AuditLogs() {
                       <th className="px-6 py-5 rounded-tl-2xl">Date & Time</th>
                       <th className="px-6 py-5">Action</th>
                       <th className="px-6 py-5">Origin User ID</th>
-                      <th className="px-6 py-5">Attribute Modified</th>
+                      <th className="px-6 py-5">Attribute(s) Modified</th>
                       <th className="px-6 py-5 rounded-tr-2xl">Device OS & Browser</th>
                     </tr>
                   </thead>
@@ -156,6 +195,9 @@ export default function AuditLogs() {
                           <td className="px-6 py-4">
                             <span className={`px-2.5 py-1.5 rounded-md text-[10px] font-bold tracking-widest border uppercase shadow-sm ${getActionColor(log.action)}`}>
                               {log.action || 'UNKNOWN'}
+                              {log.count > 1 && (
+                                <span className="ml-2 font-mono text-[9px] bg-black/20 px-1.5 py-0.5 rounded-sm">x{log.count}</span>
+                              )}
                             </span>
                           </td>
 
@@ -173,8 +215,18 @@ export default function AuditLogs() {
 
                           {/* Context */}
                           <td className="px-6 py-4">
-                            <div className="inline-flex items-center gap-2 bg-white/5 px-3 py-1.5 rounded-lg border border-white/5 font-mono text-xs text-neutral-300">
-                              {log.attribute_name || 'N/A'}
+                            <div className="flex flex-wrap gap-1">
+                              {log.attributes.length > 0 ? (
+                                log.attributes.map((attr, idx) => (
+                                  <span key={idx} className="inline-flex items-center gap-2 bg-white/5 px-2 py-1 rounded-md border border-white/5 font-mono text-xs text-neutral-300">
+                                    {attr}
+                                  </span>
+                                ))
+                              ) : (
+                                <span className="inline-flex items-center gap-2 bg-white/5 px-2 py-1 rounded-md border border-white/5 font-mono text-xs text-neutral-300">
+                                  N/A
+                                </span>
+                              )}
                             </div>
                           </td>
 
