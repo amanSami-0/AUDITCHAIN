@@ -142,7 +142,7 @@ export default function UpdateProfile() {
                 id="username"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                placeholder="johndoe"
+                placeholder="Enter username"
                 required
                 className="w-full h-11 px-4 bg-white/[0.05] border border-white/10 rounded-xl text-white placeholder-neutral-600 focus:outline-none focus:border-white/30 focus:bg-white/[0.08] text-sm"
               />
