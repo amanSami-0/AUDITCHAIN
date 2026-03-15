@@ -46,20 +46,20 @@ function Home() {
                         className: "absolute top-[48%] left-[30%] -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-[radial-gradient(circle,_rgba(176,58,46,0.70)_0%,_rgba(176,58,46,0.40)_35%,_rgba(176,58,46,0.12)_60%,_transparent_75%)] blur-[140px]"
                     }, void 0, false, {
                         fileName: "[project]/Documents/DEV/AUDIT CHAIN/frontend/app/login/page.tsx",
-                        lineNumber: 33,
+                        lineNumber: 34,
                         columnNumber: 7
                     }, this),
                     /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$Documents$2f$DEV$2f$AUDIT__CHAIN$2f$frontend$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                         className: "absolute top-[70%] left-[72%] -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-[radial-gradient(circle,_rgba(255,255,255,0.35)_0%,_rgba(255,255,255,0.18)_35%,_rgba(255,255,255,0.08)_55%,_transparent_70%)] blur-[150px]"
                     }, void 0, false, {
                         fileName: "[project]/Documents/DEV/AUDIT CHAIN/frontend/app/login/page.tsx",
-                        lineNumber: 38,
+                        lineNumber: 39,
                         columnNumber: 3
                     }, this)
                 ]
             }, void 0, true, {
                 fileName: "[project]/Documents/DEV/AUDIT CHAIN/frontend/app/login/page.tsx",
-                lineNumber: 30,
+                lineNumber: 31,
                 columnNumber: 6
             }, this),
             /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$Documents$2f$DEV$2f$AUDIT__CHAIN$2f$frontend$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("main", {
@@ -75,7 +75,7 @@ function Home() {
                                     children: "Login"
                                 }, void 0, false, {
                                     fileName: "[project]/Documents/DEV/AUDIT CHAIN/frontend/app/login/page.tsx",
-                                    lineNumber: 47,
+                                    lineNumber: 48,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$Documents$2f$DEV$2f$AUDIT__CHAIN$2f$frontend$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("p", {
@@ -83,13 +83,13 @@ function Home() {
                                     children: "Welcome back, please enter your details."
                                 }, void 0, false, {
                                     fileName: "[project]/Documents/DEV/AUDIT CHAIN/frontend/app/login/page.tsx",
-                                    lineNumber: 50,
+                                    lineNumber: 51,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/Documents/DEV/AUDIT CHAIN/frontend/app/login/page.tsx",
-                            lineNumber: 46,
+                            lineNumber: 47,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$Documents$2f$DEV$2f$AUDIT__CHAIN$2f$frontend$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("form", {
@@ -105,7 +105,7 @@ function Home() {
                                             children: "Username"
                                         }, void 0, false, {
                                             fileName: "[project]/Documents/DEV/AUDIT CHAIN/frontend/app/login/page.tsx",
-                                            lineNumber: 59,
+                                            lineNumber: 60,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$Documents$2f$DEV$2f$AUDIT__CHAIN$2f$frontend$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -115,13 +115,13 @@ function Home() {
                                             className: "w-full h-12 px-4 bg-white/[0.05] border border-white/10 rounded-xl text-white placeholder-neutral-600 focus:outline-none focus:border-white/30 focus:bg-white/[0.08]"
                                         }, void 0, false, {
                                             fileName: "[project]/Documents/DEV/AUDIT CHAIN/frontend/app/login/page.tsx",
-                                            lineNumber: 66,
+                                            lineNumber: 67,
                                             columnNumber: 15
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/Documents/DEV/AUDIT CHAIN/frontend/app/login/page.tsx",
-                                    lineNumber: 58,
+                                    lineNumber: 59,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$Documents$2f$DEV$2f$AUDIT__CHAIN$2f$frontend$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -133,7 +133,7 @@ function Home() {
                                             children: "Password"
                                         }, void 0, false, {
                                             fileName: "[project]/Documents/DEV/AUDIT CHAIN/frontend/app/login/page.tsx",
-                                            lineNumber: 76,
+                                            lineNumber: 77,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$Documents$2f$DEV$2f$AUDIT__CHAIN$2f$frontend$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("input", {
@@ -143,13 +143,13 @@ function Home() {
                                             className: "w-full h-12 px-4 bg-white/[0.05] border border-white/10 rounded-xl text-white placeholder-neutral-600 focus:outline-none focus:border-white/30 focus:bg-white/[0.08]"
                                         }, void 0, false, {
                                             fileName: "[project]/Documents/DEV/AUDIT CHAIN/frontend/app/login/page.tsx",
-                                            lineNumber: 83,
+                                            lineNumber: 84,
                                             columnNumber: 15
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/Documents/DEV/AUDIT CHAIN/frontend/app/login/page.tsx",
-                                    lineNumber: 75,
+                                    lineNumber: 76,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$Documents$2f$DEV$2f$AUDIT__CHAIN$2f$frontend$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
@@ -168,14 +168,14 @@ function Home() {
                                                             className: "peer sr-only"
                                                         }, void 0, false, {
                                                             fileName: "[project]/Documents/DEV/AUDIT CHAIN/frontend/app/login/page.tsx",
-                                                            lineNumber: 97,
+                                                            lineNumber: 98,
                                                             columnNumber: 19
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$Documents$2f$DEV$2f$AUDIT__CHAIN$2f$frontend$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("div", {
                                                             className: "w-4 h-4 border border-white/20 rounded bg-white/5 peer-checked:bg-white peer-checked:border-white"
                                                         }, void 0, false, {
                                                             fileName: "[project]/Documents/DEV/AUDIT CHAIN/frontend/app/login/page.tsx",
-                                                            lineNumber: 104,
+                                                            lineNumber: 105,
                                                             columnNumber: 19
                                                         }, this),
                                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$Documents$2f$DEV$2f$AUDIT__CHAIN$2f$frontend$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("svg", {
@@ -190,18 +190,18 @@ function Home() {
                                                                 d: "M5 13l4 4L19 7"
                                                             }, void 0, false, {
                                                                 fileName: "[project]/Documents/DEV/AUDIT CHAIN/frontend/app/login/page.tsx",
-                                                                lineNumber: 113,
+                                                                lineNumber: 114,
                                                                 columnNumber: 21
                                                             }, this)
                                                         }, void 0, false, {
                                                             fileName: "[project]/Documents/DEV/AUDIT CHAIN/frontend/app/login/page.tsx",
-                                                            lineNumber: 106,
+                                                            lineNumber: 107,
                                                             columnNumber: 19
                                                         }, this)
                                                     ]
                                                 }, void 0, true, {
                                                     fileName: "[project]/Documents/DEV/AUDIT CHAIN/frontend/app/login/page.tsx",
-                                                    lineNumber: 95,
+                                                    lineNumber: 96,
                                                     columnNumber: 17
                                                 }, this),
                                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$Documents$2f$DEV$2f$AUDIT__CHAIN$2f$frontend$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
@@ -209,13 +209,13 @@ function Home() {
                                                     children: "Remember Me"
                                                 }, void 0, false, {
                                                     fileName: "[project]/Documents/DEV/AUDIT CHAIN/frontend/app/login/page.tsx",
-                                                    lineNumber: 118,
+                                                    lineNumber: 119,
                                                     columnNumber: 17
                                                 }, this)
                                             ]
                                         }, void 0, true, {
                                             fileName: "[project]/Documents/DEV/AUDIT CHAIN/frontend/app/login/page.tsx",
-                                            lineNumber: 94,
+                                            lineNumber: 95,
                                             columnNumber: 15
                                         }, this),
                                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$Documents$2f$DEV$2f$AUDIT__CHAIN$2f$frontend$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -223,13 +223,13 @@ function Home() {
                                             children: "Forgot Password?"
                                         }, void 0, false, {
                                             fileName: "[project]/Documents/DEV/AUDIT CHAIN/frontend/app/login/page.tsx",
-                                            lineNumber: 123,
+                                            lineNumber: 124,
                                             columnNumber: 15
                                         }, this)
                                     ]
                                 }, void 0, true, {
                                     fileName: "[project]/Documents/DEV/AUDIT CHAIN/frontend/app/login/page.tsx",
-                                    lineNumber: 92,
+                                    lineNumber: 93,
                                     columnNumber: 13
                                 }, this),
                                 /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$Documents$2f$DEV$2f$AUDIT__CHAIN$2f$frontend$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("button", {
@@ -241,13 +241,13 @@ function Home() {
                                     children: "Sign In"
                                 }, void 0, false, {
                                     fileName: "[project]/Documents/DEV/AUDIT CHAIN/frontend/app/login/page.tsx",
-                                    lineNumber: 130,
+                                    lineNumber: 131,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/Documents/DEV/AUDIT CHAIN/frontend/app/login/page.tsx",
-                            lineNumber: 55,
+                            lineNumber: 56,
                             columnNumber: 11
                         }, this),
                         /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$Documents$2f$DEV$2f$AUDIT__CHAIN$2f$frontend$2f$node_modules$2f$next$2f$dist$2f$server$2f$route$2d$modules$2f$app$2d$page$2f$vendored$2f$ssr$2f$react$2d$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$ssr$5d$__$28$ecmascript$29$__["jsxDEV"])("footer", {
@@ -260,30 +260,30 @@ function Home() {
                                     children: "Sign up"
                                 }, void 0, false, {
                                     fileName: "[project]/Documents/DEV/AUDIT CHAIN/frontend/app/login/page.tsx",
-                                    lineNumber: 144,
+                                    lineNumber: 145,
                                     columnNumber: 13
                                 }, this)
                             ]
                         }, void 0, true, {
                             fileName: "[project]/Documents/DEV/AUDIT CHAIN/frontend/app/login/page.tsx",
-                            lineNumber: 142,
+                            lineNumber: 143,
                             columnNumber: 11
                         }, this)
                     ]
                 }, void 0, true, {
                     fileName: "[project]/Documents/DEV/AUDIT CHAIN/frontend/app/login/page.tsx",
-                    lineNumber: 45,
+                    lineNumber: 46,
                     columnNumber: 10
                 }, this)
             }, void 0, false, {
                 fileName: "[project]/Documents/DEV/AUDIT CHAIN/frontend/app/login/page.tsx",
-                lineNumber: 44,
+                lineNumber: 45,
                 columnNumber: 7
             }, this)
         ]
     }, void 0, true, {
         fileName: "[project]/Documents/DEV/AUDIT CHAIN/frontend/app/login/page.tsx",
-        lineNumber: 28,
+        lineNumber: 29,
         columnNumber: 5
     }, this);
 }

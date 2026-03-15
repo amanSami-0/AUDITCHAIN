@@ -5,7 +5,7 @@ exports.authUser = (req, res, next) => {
     const token = req.cookies?.token;
 
     if (!token)
-        return res.redirect("/login");
+        return res.status(401).json({ error: "Unauthorized" });
 
     try {
 
@@ -16,6 +16,6 @@ exports.authUser = (req, res, next) => {
         next();
 
     } catch {
-        return res.redirect("/login");
+        return res.status(401).json({ error: "Invalid token" });
     }
 };

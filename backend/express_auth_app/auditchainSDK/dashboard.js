@@ -13,9 +13,7 @@ router.get("/", async (req, res) => {
         limit: 100
     })
 
-    const viewPath = path.join(__dirname, "views", "auditDashboard.ejs")
-
-    res.render(viewPath, { logs })
+    res.json({ logs })
 })
 
 module.exports = router
