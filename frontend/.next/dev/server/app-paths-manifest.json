@@ -1,7 +1,5 @@
 {
-  "/_not-found/page": "app/_not-found/page.js",
   "/audit/page": "app/audit/page.js",
-  "/hashes/page": "app/hashes/page.js",
   "/login/page": "app/login/page.js",
   "/profile/page": "app/profile/page.js"
 }
