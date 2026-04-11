@@ -17,11 +17,11 @@ exports.login = async (req, res) => {
 
         const user = await Developer.findOne({ where: { username } });
 
-        if (!user) return res.redirect("/login");
+        if (!user) return res.status(401).json({ error: "User not found" });
 
         // 🚫 BLOCK CHECK
         if (user.is_blocked) {
-            return res.send("🚫 Permanently blocked by admin");
+            return res.status(403).json({ error: "Permanently blocked by admin" });
         }
 
         const valid = await bcrypt.compare(password, user.password);
@@ -36,7 +36,7 @@ exports.login = async (req, res) => {
 
             await user.save();
 
-            return res.redirect("/login");
+            return res.status(401).json({ error: "Incorrect password" });
         }
 
         // ✅ SUCCESS
@@ -46,9 +46,6 @@ exports.login = async (req, res) => {
         // 🔐 SESSION (ONLY THIS MATTERS NOW)
         req.session.dev = user.id;
 
-        // ❌ REMOVE OLD COOKIE SYSTEM
-        // res.cookie("audit_dev_logged_in", true);
-
         await AccessLog.create({
             developer_id: user.id,
             session_id: req.sessionID,
@@ -57,13 +54,11 @@ exports.login = async (req, res) => {
             login_time: new Date()
         });
 
-        //  AUTO REDIRECT TO MAIN APP
-        req.session.dev = user.id;
-        res.redirect("http://localhost:3000/audit");
+        res.json({ message: "Logged in successfully" });
 
     } catch (err) {
         console.error("LOGIN ERROR:", err);
-        res.redirect("/login");
+        res.status(500).json({ error: "Something went wrong" });
     }
 };
 
@@ -95,11 +90,11 @@ exports.logout = async (req, res) => {
             if (err) console.log(err);
         });
 
-        res.redirect("/login");
+        res.json({ message: "Logged out successfully" });
 
     } catch (err) {
         console.error("LOGOUT ERROR:", err);
-        res.redirect("/login");
+        res.status(500).json({ error: "Something went wrong" });
     }
 };
 
@@ -111,7 +106,7 @@ exports.logout = async (req, res) => {
 exports.protect = (req, res, next) => {
 
     if (!req.session.dev) {
-        return res.redirect("/login");
+        return res.status(401).json({ error: "Unauthorized" });
     }
 
     next();
@@ -126,7 +121,7 @@ exports.admin = async (req, res) => {
 
     const users = await Developer.findAll();
 
-    res.render("admin", { users });
+    res.json({ users });
 };
 
 
@@ -147,7 +142,7 @@ exports.register = async (req, res) => {
         password: hash
     });
 
-    res.redirect("/admin");
+    res.status(201).json({ message: "Developer registered" });
 };
 
 
@@ -165,7 +160,7 @@ exports.unblock = async (req, res) => {
         await user.save();
     }
 
-    res.redirect("/admin");
+    res.json({ message: "Developer unblocked" });
 };
 
 
@@ -204,7 +199,7 @@ exports.accessLogs = async (req, res) => {
     const userMap = {};
     users.forEach(u => userMap[u.id] = u.username);
 
-    res.render("accessLogs", {
+    res.json({
         logs,
         userMap,
         error,
@@ -236,7 +231,7 @@ exports.kickUser = async (req, res) => {
         if (err) console.log(err);
     });
 
-    res.redirect("/access-logs");
+    res.json({ message: "User kicked" });
 };
 
 
@@ -250,7 +245,7 @@ exports.deleteDeveloper = async (req, res) => {
         const user = await Developer.findByPk(req.params.id);
 
         if (!user) {
-            return res.redirect("/admin");
+            return res.status(404).json({ error: "Developer not found" });
         }
 
         // 🔥 OPTIONAL: delete all access logs of this developer
@@ -261,11 +256,11 @@ exports.deleteDeveloper = async (req, res) => {
         // 🔥 delete developer
         await user.destroy();
 
-        res.redirect("/admin");
+        res.json({ message: "Developer deleted" });
 
     } catch (err) {
         console.error("DELETE ERROR:", err);
-        res.redirect("/admin");
+        res.status(500).json({ error: "Something went wrong" });
     }
 };
 // =====================

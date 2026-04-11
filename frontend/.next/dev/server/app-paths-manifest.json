@@ -1,5 +1,10 @@
 {
   "/audit/page": "app/audit/page.js",
-  "/login/page": "app/login/page.js",
-  "/profile/page": "app/profile/page.js"
+  "/dev/access-logs/page": "app/dev/access-logs/page.js",
+  "/dev/admin/page": "app/dev/admin/page.js",
+  "/dev/dashboard/page": "app/dev/dashboard/page.js",
+  "/dev/login/page": "app/dev/login/page.js",
+  "/dev/signup/page": "app/dev/signup/page.js",
+  "/profile/page": "app/profile/page.js",
+  "/settings/page": "app/settings/page.js"
 }

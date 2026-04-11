@@ -10,6 +10,9 @@ export default function Settings() {
   const [mfaEnabled, setMfaEnabled] = useState(false);
   const [emailAlerts, setEmailAlerts] = useState(true);
   const [syncBlockchain, setSyncBlockchain] = useState(false);
+  const [ipBinding, setIpBinding] = useState(false);
+  const [idleTimeout, setIdleTimeout] = useState(true);
+  const [darkWebSync, setDarkWebSync] = useState(false);
   
   const [loadingAction, setLoadingAction] = useState("");
   const [successMsg, setSuccessMsg] = useState("");
@@ -150,6 +153,24 @@ export default function Settings() {
             <div className="space-y-3">
                 {createToggleUI("Maintenance Mode", "Take the entire system offline for scheduled upgrades or scaling tasks.", "MAINTENANCE_MODE", maintenanceMode, setMaintenanceMode)}
                 {createToggleUI("Immutable Ledger Sync", "Continuously mirror application logs to the decentralized vault.", "BLOCKCHAIN_SYNC", syncBlockchain, setSyncBlockchain)}
+            </div>
+          </section>
+  
+          {/* Section 3 (NEW) */}
+          <section className="bg-white/[0.02] backdrop-blur-2xl border border-white/10 rounded-2xl overflow-hidden shadow-2xl p-6 md:p-8 space-y-3">
+            <div className="mb-6 pb-4 border-b border-white/5">
+                <h2 className="text-sm uppercase tracking-[0.2em] font-bold text-neutral-500 flex items-center gap-2">
+                    <svg className="w-4 h-4 text-purple-500" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                    Advanced Telemetry
+                </h2>
+            </div>
+            
+            <div className="space-y-3">
+                {createToggleUI("Strict IP Binding", "Lock all active operator sessions to their initial authorization IP address.", "IP_BINDING", ipBinding, setIpBinding)}
+                {createToggleUI("Session Timeout Enforcement", "Aggressively prune idle operator connections after 15 minutes of inactivity.", "IDLE_TIMEOUT", idleTimeout, setIdleTimeout)}
+                {createToggleUI("Dark Web Data Sync", "Continuously cross-reference signatures against compromised credential databases.", "DARK_WEB_SYNC", darkWebSync, setDarkWebSync)}
             </div>
           </section>
 

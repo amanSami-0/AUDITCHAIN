@@ -33,10 +33,10 @@ export default function AuditLogs() {
       try {
         const data = await fetchApi('/audit');
         const rawLogs: AuditLog[] = data.logs || [];
-        
+
         // Aggregate Logs
         const aggregated: AggregatedAuditLog[] = [];
-        
+
         rawLogs.forEach(log => {
           if (aggregated.length === 0) {
             aggregated.push({
@@ -79,6 +79,47 @@ export default function AuditLogs() {
     };
 
     fetchLogs();
+  }, []);
+
+  // 🔥 Real-time Update Listener
+  useEffect(() => {
+    const eventSource = new EventSource('/api/dev/events');
+
+    eventSource.onmessage = (event) => {
+      if (event.data === 'update') {
+        const fetchLogs = async () => {
+          try {
+            const data = await fetchApi('/audit');
+            const rawLogs: AuditLog[] = data.logs || [];
+
+            const aggregated: AggregatedAuditLog[] = [];
+            rawLogs.forEach(log => {
+              if (aggregated.length === 0) {
+                aggregated.push({ ...log, id: log.id.toString(), attributes: log.attribute_name ? [log.attribute_name] : [], count: 1 });
+                return;
+              }
+              const lastGroup = aggregated[aggregated.length - 1];
+              const timeDiff = Math.abs(new Date(lastGroup.createdAt).getTime() - new Date(log.createdAt).getTime());
+              const isSameAction = lastGroup.action === log.action;
+              const isSameUser = lastGroup.user_id === log.user_id;
+              const isWithin15Mins = timeDiff <= 15 * 60 * 1000;
+              if (isSameAction && isSameUser && isWithin15Mins) {
+                lastGroup.count += 1;
+                if (log.attribute_name && !lastGroup.attributes.includes(log.attribute_name)) lastGroup.attributes.push(log.attribute_name);
+              } else {
+                aggregated.push({ ...log, id: log.id.toString(), attributes: log.attribute_name ? [log.attribute_name] : [], count: 1 });
+              }
+            });
+            setLogs(aggregated);
+          } catch (err) {
+            console.error("Failed to sync audit logs", err);
+          }
+        };
+        fetchLogs();
+      }
+    };
+
+    return () => eventSource.close();
   }, []);
 
   const getActionColor = (action: string) => {
@@ -261,8 +302,8 @@ export default function AuditLogs() {
                 <span>Log Height: {logs.length} Actions</span>
                 <span className="flex items-center gap-2 mt-2 md:mt-0 px-3 py-1 bg-white/5 border border-white/10 text-neutral-400 rounded-full">
                   <span className="relative flex h-2 w-2">
-                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-neutral-400 opacity-75"></span>
-                    <span className="relative inline-flex rounded-full h-2 w-2 bg-neutral-500"></span>
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
                   </span>
                   Live Sync Active
                 </span>

@@ -1,13 +1,12 @@
 __turbopack_load_page_chunks__("/_error", [
-  "static/chunks/a28c2_next_dist_compiled_7e65ddd0._.js",
-  "static/chunks/a28c2_next_dist_shared_lib_d961bcbb._.js",
-  "static/chunks/a28c2_next_dist_client_ab131272._.js",
-  "static/chunks/a28c2_next_dist_2126c0a1._.js",
-  "static/chunks/a28c2_next_error_4f4b4db8.js",
-  "static/chunks/[next]_entry_page-loader_ts_0274c1a5._.js",
-  "static/chunks/a28c2_react-dom_bc61c3dd._.js",
-  "static/chunks/a28c2_20c4f74d._.js",
-  "static/chunks/[root-of-the-server]__317d8079._.js",
-  "static/chunks/Documents_DEV_AUDIT CHAIN_frontend_pages__error_2da965e7._.js",
-  "static/chunks/turbopack-Documents_DEV_AUDIT CHAIN_frontend_pages__error_ad37340b._.js"
+  "static/chunks/0.z4_next_dist_compiled_0ng-o82._.js",
+  "static/chunks/0.z4_next_dist_shared_lib_0vseav3._.js",
+  "static/chunks/0.z4_next_dist_client_0yw3jbk._.js",
+  "static/chunks/0.z4_next_dist_0qcxhr8._.js",
+  "static/chunks/[next]_entry_page-loader_ts_0ge~ep3._.js",
+  "static/chunks/0.z4_react-dom_0nyvy8r._.js",
+  "static/chunks/0.z4_0ne.i7i._.js",
+  "static/chunks/[root-of-the-server]__0267spb._.js",
+  "static/chunks/Documents_DEV_Mini project_AUDITCHAIN_frontend_pages__error_07xvfw~._.js",
+  "static/chunks/turbopack-Documents_DEV_Mini project_AUDITCHAIN_frontend_pages__error_13ny4nt._.js"
 ])

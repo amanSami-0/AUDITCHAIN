@@ -18,11 +18,27 @@ module.exports = (sequelize) => {
             limit: 100
         })
 
-        // ✅ FIX: use absolute path
-        res.render(
-            path.join(__dirname, "views", "auditDashboard.ejs"),
-            { logs }
-        )
+        // ✅ Return JSON instead of rendering EJS
+        res.json({ logs });
+    })
+
+    // 🔥 REAL-TIME EVENTS (SSE)
+    router.get("/events", (req, res) => {
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
+
+        const auditLogger = require("./auditLogger");
+        
+        const onNewLog = () => {
+            res.write(`data: update\n\n`);
+        };
+
+        auditLogger.events.on("new_log", onNewLog);
+
+        req.on("close", () => {
+            auditLogger.events.removeListener("new_log", onNewLog);
+        });
     })
 
     return router

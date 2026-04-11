@@ -26,7 +26,7 @@ module.exports = (sequelize, auditLogger) => {
                 req.headers["x-forwarded-for"]?.split(",")[0] ||
                 req.socket.remoteAddress
 
-            const device = req.headers["user-agent"]
+            const user_agent = req.headers["user-agent"]
 
             // =====================
             // PAGE VISIT
@@ -37,7 +37,7 @@ module.exports = (sequelize, auditLogger) => {
                     page: req.path,
                     method: req.method,
                     ip_address: ip,
-                    device,
+                    user_agent,
                     status: "INFO"
                 })
             }
@@ -47,14 +47,15 @@ module.exports = (sequelize, auditLogger) => {
                 // =====================
                 // GENERIC ACTION LOG
                 // =====================
-                logAction: async (action, user_id = null) => {
+                logAction: async (action, user_id = null, attribute_name = null) => {
                     await auditLogger.log({
                         action,
+                        attribute_name,
                         page: req.path,
                         method: req.method,
                         user_id,
                         ip_address: ip,
-                        device,
+                        user_agent,
                         status: "SUCCESS"
                     })
                 },
@@ -85,7 +86,7 @@ module.exports = (sequelize, auditLogger) => {
                                 method: "POST",
                                 user_id,
                                 ip_address: ip,
-                                device,
+                                user_agent,
                                 status: "BLOCKED"
                             })
                         }
@@ -101,7 +102,7 @@ module.exports = (sequelize, auditLogger) => {
                         record = await LoginAttempt.create({
                             email,
                             ip_address: ip,
-                            device,
+                            user_agent,
                             attempts: 0,
                             last_attempt: now
                         })
@@ -125,7 +126,7 @@ module.exports = (sequelize, auditLogger) => {
                             method: "POST",
                             user_id,
                             ip_address: ip,
-                            device,
+                            user_agent,
                             status: "BLOCKED",
                             attempt_count: blockedRecord.attempts
                         })
@@ -157,7 +158,7 @@ module.exports = (sequelize, auditLogger) => {
                             method: "POST",
                             user_id,
                             ip_address: ip,
-                            device,
+                            user_agent,
                             status: "SUSPICIOUS",
                             attempt_count: uniqueIPs
                         })
@@ -200,7 +201,7 @@ module.exports = (sequelize, auditLogger) => {
                             method: "POST",
                             user_id,
                             ip_address: ip,
-                            device,
+                            user_agent,
                             status,
                             attempt_count: record.attempts
                         })
@@ -222,7 +223,7 @@ module.exports = (sequelize, auditLogger) => {
                         method: "POST",
                         user_id,
                         ip_address: ip,
-                        device,
+                        user_agent,
                         status: "LOGGED_IN"
                     })
 

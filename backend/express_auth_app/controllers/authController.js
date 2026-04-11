@@ -7,19 +7,25 @@ const { hashPassword, verifyPassword } = require("../utils/password");
 // PAGES
 // =====================
 
-exports.loginPage = (req, res) => res.render("login");
-exports.signupPage = (req, res) => res.render("signup");
-exports.deletePage = (req, res) => res.render("delete");
-exports.forgotPage = (req, res) => res.render("forgot");
+exports.loginPage = (req, res) => res.json({ message: "Login endpoint" });
+exports.signupPage = (req, res) => res.json({ message: "Signup endpoint" });
+exports.deletePage = (req, res) => res.json({ message: "Delete endpoint" });
+exports.forgotPage = (req, res) => res.json({ message: "Forgot endpoint" });
 
 exports.profile = async (req, res) => {
-    const user = await User.findByPk(req.user.id);
-    res.render("profile", { user });
+    const user = await User.findByPk(req.user.id, {
+        attributes: { exclude: ['password'] }
+    });
+    
+    if (!user) {
+        return res.status(404).json({ error: "User not found" });
+    }
+
+    res.json({ user });
 };
 
 exports.updatePage = async (req, res) => {
-    const user = await User.findByPk(req.user.id);
-    res.render("update", { user });
+    res.json({ message: "Update endpoint" });
 };
 
 
@@ -34,20 +40,17 @@ exports.signup = async (req, res) => {
         const { username, email, date_of_birth, password } = req.body;
 
         if (!username || !email || !password || !date_of_birth) {
-            req.flash("error", "All fields required");
-            return res.redirect("/signup");
+            return res.status(400).json({ error: "All fields required" });
         }
 
         const existingEmail = await User.findOne({ where: { email } });
         if (existingEmail) {
-            req.flash("error", "Email already exists");
-            return res.redirect("/signup");
+            return res.status(400).json({ error: "Email already exists" });
         }
 
         const existingUsername = await User.findOne({ where: { username } });
         if (existingUsername) {
-            req.flash("error", "Username taken");
-            return res.redirect("/signup");
+            return res.status(400).json({ error: "Username taken" });
         }
 
         const hash = await hashPassword(password);
@@ -65,13 +68,11 @@ exports.signup = async (req, res) => {
 
         await req.audit.logAction("SIGNUP", newUser.id);
 
-        req.flash("success", "Account created");
-        res.redirect("/login");
+        res.status(201).json({ message: "Account created" });
 
     } catch (err) {
         console.error("SIGNUP ERROR:", err);
-        req.flash("error", "Something went wrong");
-        res.redirect("/signup");
+        res.status(500).json({ error: "Something went wrong" });
     }
 };
 
@@ -90,8 +91,7 @@ exports.login = async (req, res) => {
         const blockCheck = await req.audit.trackLogin(email, null);
 
         if (blockCheck.blocked) {
-            req.flash("error", "Account blocked. Try after 10 minutes.");
-            return res.redirect("/login");
+            return res.status(403).json({ error: "Account blocked. Try after 10 minutes." });
         }
 
         const user = await User.findOne({ where: { email } });
@@ -102,12 +102,10 @@ exports.login = async (req, res) => {
             const result = await req.audit.trackLogin(email, false);
 
             if (result.blocked) {
-                req.flash("error", "Too many attempts. Account blocked.");
-                return res.redirect("/login");
+                return res.status(403).json({ error: "Too many attempts. Account blocked." });
             }
 
-            req.flash("error", "User not found");
-            return res.redirect("/login");
+            return res.status(401).json({ error: "User not found" });
         }
 
         // ❌ WRONG PASSWORD
@@ -118,20 +116,17 @@ exports.login = async (req, res) => {
             const result = await req.audit.trackLogin(email, false, user.id);
 
             if (result.blocked) {
-                req.flash("error", "Too many attempts. Account blocked.");
-                return res.redirect("/login");
+                return res.status(403).json({ error: "Too many attempts. Account blocked." });
             }
 
-            req.flash("error", "Incorrect password");
-            return res.redirect("/login");
+            return res.status(401).json({ error: "Incorrect password" });
         }
 
         // 🔴 STEP 2: DOUBLE BLOCK CHECK
         const finalCheck = await req.audit.trackLogin(email, null, user.id);
 
         if (finalCheck.blocked) {
-            req.flash("error", "Account blocked. Try later.");
-            return res.redirect("/login");
+            return res.status(403).json({ error: "Account blocked. Try later." });
         }
 
         // ✅ SUCCESS LOGIN
@@ -143,14 +138,13 @@ exports.login = async (req, res) => {
             { expiresIn: "1h" }
         );
 
-        res.cookie("token", token);
+        res.cookie("token", token, { httpOnly: true, sameSite: 'lax' });
 
-        res.redirect("/profile");
+        res.json({ message: "Logged in successfully", user: { id: user.id, username: user.username, email: user.email } });
 
     } catch (err) {
         console.error("LOGIN ERROR:", err);
-        req.flash("error", "Something went wrong");
-        res.redirect("/login");
+        res.status(500).json({ error: "Something went wrong" });
     }
 };
 
@@ -162,13 +156,45 @@ exports.login = async (req, res) => {
 exports.update = async (req, res) => {
 
     const user = await User.findByPk(req.user.id);
+    
+    if (!user) {
+        return res.status(404).json({ error: "User not found" });
+    }
 
     await user.update(req.body);
 
     await req.audit.logAction("UPDATE_PROFILE", user.id);
 
-    req.flash("success", "Profile updated");
-    res.redirect("/profile");
+    res.json({ message: "Profile updated successfully" });
+};
+
+
+// =====================
+// SETTINGS
+// =====================
+
+exports.updateSettings = async (req, res) => {
+    try {
+        const user = await User.findByPk(req.user.id);
+        
+        if (!user) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        // We log the setting changes to the audit ledger
+        const updates = Object.keys(req.body);
+        
+        for (const key of updates) {
+            const value = req.body[key];
+            const detailStr = `${key.toUpperCase().replace(/_/g, " ")}: ${value.toString().toUpperCase()}`;
+            await req.audit.logAction("Updated Configuration", user.id, detailStr);
+        }
+
+        res.json({ message: "Settings updated successfully" });
+    } catch (err) {
+        console.error("SETTINGS ERROR:", err);
+        res.status(500).json({ error: "Something went wrong" });
+    }
 };
 
 
@@ -179,6 +205,10 @@ exports.update = async (req, res) => {
 exports.deleteAccount = async (req, res) => {
 
     const user = await User.findByPk(req.user.id);
+    
+    if (!user) {
+        return res.status(404).json({ error: "User not found" });
+    }
 
     await user.destroy();
 
@@ -186,7 +216,7 @@ exports.deleteAccount = async (req, res) => {
 
     res.clearCookie("token");
 
-    res.redirect("/signup");
+    res.json({ message: "Account deleted successfully" });
 };
 
 
@@ -201,8 +231,7 @@ exports.forgotPassword = async (req, res) => {
     const user = await User.findOne({ where: { email } });
 
     if (!user) {
-        req.flash("error", "User not found");
-        return res.redirect("/forgot");
+        return res.status(404).json({ error: "User not found" });
     }
 
     user.password = await hashPassword(password);
@@ -210,8 +239,7 @@ exports.forgotPassword = async (req, res) => {
 
     await req.audit.logAction("PASSWORD_RESET", user.id);
 
-    req.flash("success", "Password updated");
-    res.redirect("/login");
+    res.json({ message: "Password updated successfully" });
 };
 
 
@@ -221,5 +249,5 @@ exports.forgotPassword = async (req, res) => {
 
 exports.logout = (req, res) => {
     res.clearCookie("token");
-    res.redirect("/login");
+    res.json({ message: "Logged out successfully" });
 };

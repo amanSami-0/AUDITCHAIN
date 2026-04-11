@@ -1,5 +1,8 @@
 const { generateHash } = require("./hash")
+const EventEmitter = require("events")
 
+const auditEvents = new EventEmitter()
+exports.events = auditEvents
 let AuditLog
 
 // =====================
@@ -60,10 +63,13 @@ exports.log = async (data) => {
 
         const current_hash = generateHash(logData)
 
-        await AuditLog.create({
+        const newLog = await AuditLog.create({
             ...logData,
             current_hash
         })
+
+        // 🔥 Broadcast new log to real-time subscribers
+        auditEvents.emit("new_log", newLog)
 
     } catch (err) {
         console.error("Audit Log Error:", err)

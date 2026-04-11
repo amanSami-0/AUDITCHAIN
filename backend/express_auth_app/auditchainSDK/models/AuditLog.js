@@ -5,6 +5,7 @@ module.exports = (sequelize) => {
     return sequelize.define("AuditLog", {
 
         action: DataTypes.STRING,
+        attribute_name: DataTypes.STRING,
 
         page: DataTypes.STRING,
 
@@ -14,7 +15,7 @@ module.exports = (sequelize) => {
 
         ip_address: DataTypes.STRING,
 
-        device: DataTypes.STRING,
+        user_agent: DataTypes.STRING,
 
         status: DataTypes.STRING,
 

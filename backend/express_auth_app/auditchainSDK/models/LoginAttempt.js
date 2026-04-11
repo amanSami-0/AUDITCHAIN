@@ -8,7 +8,7 @@ module.exports = (sequelize) => {
 
         ip_address: DataTypes.STRING,
 
-        device: DataTypes.STRING,
+        user_agent: DataTypes.STRING,
 
         attempts: {
             type: DataTypes.INTEGER,

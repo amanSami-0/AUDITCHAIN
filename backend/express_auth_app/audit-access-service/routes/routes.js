@@ -3,10 +3,10 @@ const router = express.Router();
 const controller = require("../controllers/controller");
 
 // ROOT
-router.get("/", (req, res) => res.redirect("/login"));
+router.get("/", (req, res) => res.json({ message: "Audit Access Service API" }));
 
 // LOGIN
-router.get("/login", (req, res) => res.render("login"));
+router.get("/login", (req, res) => res.json({ message: "Login endpoint" }));
 router.post("/login", controller.login);
 
 // LOGOUT
@@ -14,7 +14,7 @@ router.get("/logout", controller.logout);
 
 // DASHBOARD
 router.get("/dashboard", controller.protect, (req, res) => {
-    res.render("dashboard");
+    res.json({ message: "Dashboard endpoint" });
 });
 
 // ADMIN + OTHER ROUTES (keep yours)
