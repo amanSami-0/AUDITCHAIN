@@ -4,53 +4,32 @@ const cookieParser = require("cookie-parser")
 const bodyParser = require("body-parser")
 const flash = require("connect-flash")
 const path = require("path")
+const axios = require("axios")   // 🔥 IMPORTANT
 
 const sequelize = require("./config/db")
-const authRoutes = require("./routes/authRoutes")
-
-/* AUDIT SDK */
 const audit = require("./auditchainSDK")
+
+// ✅ LOAD USER MODEL
+require("./models/User")
+
+const authRoutes = require("./routes/authRoutes")
 
 const app = express()
 
-/* =====================
-   VIEW ENGINE
-===================== */
+app.set("trust proxy", true)
 
 app.set("views", path.join(__dirname, "views"))
 app.set("view engine", "ejs")
 
-/* =====================
-   STATIC FILES
-===================== */
-
 app.use(express.static(path.join(__dirname, "public")))
-
-/* =====================
-   BODY PARSER
-===================== */
-
 app.use(bodyParser.urlencoded({ extended: true }))
-
-/* =====================
-   COOKIE PARSER
-===================== */
-
 app.use(cookieParser())
-
-/* =====================
-   SESSION
-===================== */
 
 app.use(session({
     secret: "secret",
     resave: false,
     saveUninitialized: true
 }))
-
-/* =====================
-   FLASH MESSAGES
-===================== */
 
 app.use(flash())
 
@@ -60,35 +39,69 @@ app.use((req, res, next) => {
     next()
 })
 
-/* =====================
-   AUDIT SDK
-===================== */
 
-audit.init()
+// =====================
+// 🔐 REAL AUDIT ACCESS GUARD (FINAL FIX)
+// =====================
 
-app.use(audit.middleware())
+async function auditAccessGuard(req, res, next) {
 
-app.use("/audit", audit.dashboard)
+    try {
 
-/* =====================
-   ROUTES
-===================== */
+        const response = await axios.get(
+            "http://localhost:4000/verify-session",
+            {
+                headers: {
+                    Cookie: req.headers.cookie || ""   // 🔥 forward session
+                }
+            }
+        );
 
-app.use("/", authRoutes)
+        if (!response.data.valid) {
+            return res.redirect("http://localhost:4000/login");
+        }
 
-/* =====================
-   DATABASE + SERVER
-===================== */
+        next();
 
-sequelize.sync().then(() => {
+    } catch (err) {
+        return res.redirect("http://localhost:4000/login");
+    }
+}
 
-    console.log("Database Connected")
 
-    app.listen(3000, () => {
-        console.log("Server running at http://localhost:3000")
-        console.log("Audit dashboard at http://localhost:3000/audit")
-    })
+// =====================
+// 🚀 START SERVER
+// =====================
 
-}).catch(err => {
-    console.log("Database error:", err)
-})
+async function startServer() {
+
+    try {
+
+        // ✅ INIT AUDIT SDK
+        await audit.init()
+
+        // ✅ SDK MIDDLEWARE
+        app.use(audit.middleware())
+
+        // ✅ MAIN APP ROUTES
+        app.use("/", authRoutes)
+
+        // 🔐 PROTECTED AUDIT ROUTE
+        app.use("/audit", auditAccessGuard, audit.dashboard)
+
+        // ✅ DB
+        await sequelize.sync()
+
+        console.log("Database Connected")
+
+        app.listen(3000, () => {
+            console.log("Server running at http://localhost:3000")
+            console.log("Audit dashboard protected via external service")
+        })
+
+    } catch (err) {
+        console.error("Startup Error:", err)
+    }
+}
+
+startServer()

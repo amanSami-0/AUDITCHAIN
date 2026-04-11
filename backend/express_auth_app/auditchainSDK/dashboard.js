@@ -1,21 +1,29 @@
 const express = require("express")
 const path = require("path")
-const AuditLogModel = require("./models/AuditLog")
 
-const router = express.Router()
+let AuditLog
 
-router.get("/", async (req, res) => {
+module.exports = (sequelize) => {
 
-    const AuditLog = AuditLogModel()
+    const router = express.Router()
 
-    const logs = await AuditLog.findAll({
-        order: [["id", "DESC"]],
-        limit: 100
+    if (!AuditLog) {
+        AuditLog = require("./models/AuditLog")(sequelize)
+    }
+
+    router.get("/", async (req, res) => {
+
+        const logs = await AuditLog.findAll({
+            order: [["id", "DESC"]],
+            limit: 100
+        })
+
+        // ✅ FIX: use absolute path
+        res.render(
+            path.join(__dirname, "views", "auditDashboard.ejs"),
+            { logs }
+        )
     })
 
-    const viewPath = path.join(__dirname, "views", "auditDashboard.ejs")
-
-    res.render(viewPath, { logs })
-})
-
-module.exports = router
+    return router
+}
