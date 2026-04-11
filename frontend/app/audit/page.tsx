@@ -18,7 +18,7 @@ interface AuditLog {
 }
 
 interface AggregatedAuditLog extends Omit<AuditLog, 'attribute_name' | 'id'> {
-  id: string; // Group ID
+  id: string;
   attributes: string[];
   count: number;
 }
