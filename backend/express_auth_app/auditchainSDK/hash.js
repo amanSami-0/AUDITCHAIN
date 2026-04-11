@@ -1,11 +1,10 @@
 const crypto = require("crypto")
 
-function generateHash(data){
-
+function generateHash(data) {
     return crypto
         .createHash("sha256")
-        .update(data)
+        .update(JSON.stringify(data))
         .digest("hex")
 }
 
-module.exports = generateHash
+module.exports = { generateHash }

@@ -2,13 +2,52 @@ const User = require("../models/User");
 const jwt = require("jsonwebtoken");
 const { hashPassword, verifyPassword } = require("../utils/password");
 
+
+// =====================
+// PAGES
+// =====================
+
+exports.loginPage = (req, res) => res.render("login");
+exports.signupPage = (req, res) => res.render("signup");
+exports.deletePage = (req, res) => res.render("delete");
+exports.forgotPage = (req, res) => res.render("forgot");
+
+exports.profile = async (req, res) => {
+    const user = await User.findByPk(req.user.id);
+    res.render("profile", { user });
+};
+
+exports.updatePage = async (req, res) => {
+    const user = await User.findByPk(req.user.id);
+    res.render("update", { user });
+};
+
+
+// =====================
+// SIGNUP
+// =====================
+
 exports.signup = async (req, res) => {
+
     try {
+
         const { username, email, date_of_birth, password } = req.body;
 
-        const existingUser = await User.findOne({ where: { email } });
-        if (existingUser) {
-            return res.status(400).json({ error: "User already exists" });
+        if (!username || !email || !password || !date_of_birth) {
+            req.flash("error", "All fields required");
+            return res.redirect("/signup");
+        }
+
+        const existingEmail = await User.findOne({ where: { email } });
+        if (existingEmail) {
+            req.flash("error", "Email already exists");
+            return res.redirect("/signup");
+        }
+
+        const existingUsername = await User.findOne({ where: { username } });
+        if (existingUsername) {
+            req.flash("error", "Username taken");
+            return res.redirect("/signup");
         }
 
         const hash = await hashPassword(password);
@@ -16,35 +55,87 @@ exports.signup = async (req, res) => {
         const dob = new Date(date_of_birth);
         const age = new Date().getFullYear() - dob.getFullYear();
 
-        await User.create({
+        const newUser = await User.create({
             username,
             email,
-            date_of_birth,
+            date_of_birth: dob,
             age,
             password: hash
         });
 
-        res.status(201).json({ message: "Account created" });
-    } catch (error) {
-        res.status(500).json({ error: "Failed to create account" });
+        await req.audit.logAction("SIGNUP", newUser.id);
+
+        req.flash("success", "Account created");
+        res.redirect("/login");
+
+    } catch (err) {
+        console.error("SIGNUP ERROR:", err);
+        req.flash("error", "Something went wrong");
+        res.redirect("/signup");
     }
 };
 
+
+// =====================
+// LOGIN (FINAL SECURE)
+// =====================
+
 exports.login = async (req, res) => {
+
     try {
+
         const { email, password } = req.body;
+
+        // 🔴 STEP 1: BLOCK CHECK FIRST
+        const blockCheck = await req.audit.trackLogin(email, null);
+
+        if (blockCheck.blocked) {
+            req.flash("error", "Account blocked. Try after 10 minutes.");
+            return res.redirect("/login");
+        }
 
         const user = await User.findOne({ where: { email } });
 
+        // ❌ USER NOT FOUND
         if (!user) {
-            return res.status(401).json({ error: "User not found" });
+
+            const result = await req.audit.trackLogin(email, false);
+
+            if (result.blocked) {
+                req.flash("error", "Too many attempts. Account blocked.");
+                return res.redirect("/login");
+            }
+
+            req.flash("error", "User not found");
+            return res.redirect("/login");
         }
 
+        // ❌ WRONG PASSWORD
         const valid = await verifyPassword(password, user.password);
 
         if (!valid) {
-            return res.status(401).json({ error: "Incorrect password" });
+
+            const result = await req.audit.trackLogin(email, false, user.id);
+
+            if (result.blocked) {
+                req.flash("error", "Too many attempts. Account blocked.");
+                return res.redirect("/login");
+            }
+
+            req.flash("error", "Incorrect password");
+            return res.redirect("/login");
         }
+
+        // 🔴 STEP 2: DOUBLE BLOCK CHECK
+        const finalCheck = await req.audit.trackLogin(email, null, user.id);
+
+        if (finalCheck.blocked) {
+            req.flash("error", "Account blocked. Try later.");
+            return res.redirect("/login");
+        }
+
+        // ✅ SUCCESS LOGIN
+        await req.audit.trackLogin(email, true, user.id);
 
         const token = jwt.sign(
             { id: user.id },
@@ -52,94 +143,83 @@ exports.login = async (req, res) => {
             { expiresIn: "1h" }
         );
 
-        res.cookie("token", token, { httpOnly: true, sameSite: 'lax' });
+        res.cookie("token", token);
 
-        res.json({ message: "Logged in successfully", user: { id: user.id, username: user.username, email: user.email } });
-    } catch (error) {
-        res.status(500).json({ error: "Login failed" });
+        res.redirect("/profile");
+
+    } catch (err) {
+        console.error("LOGIN ERROR:", err);
+        req.flash("error", "Something went wrong");
+        res.redirect("/login");
     }
 };
 
-exports.profile = async (req, res) => {
-    try {
-        const user = await User.findByPk(req.user.id, {
-            attributes: { exclude: ['password'] }
-        });
 
-        if (!user) {
-            return res.status(404).json({ error: "User not found" });
-        }
-
-        res.json({ user });
-    } catch (error) {
-        res.status(500).json({ error: "Failed to fetch profile" });
-    }
-};
+// =====================
+// UPDATE
+// =====================
 
 exports.update = async (req, res) => {
-    try {
-        const user = await User.findByPk(req.user.id);
-        
-        if (!user) {
-            return res.status(404).json({ error: "User not found" });
-        }
 
-        await user.update(req.body);
+    const user = await User.findByPk(req.user.id);
 
-        res.json({ message: "Profile updated successfully" });
-    } catch (error) {
-        res.status(500).json({ error: "Failed to update profile" });
-    }
+    await user.update(req.body);
+
+    await req.audit.logAction("UPDATE_PROFILE", user.id);
+
+    req.flash("success", "Profile updated");
+    res.redirect("/profile");
 };
+
+
+// =====================
+// DELETE
+// =====================
 
 exports.deleteAccount = async (req, res) => {
-    try {
-        const user = await User.findByPk(req.user.id);
 
-        if (!user) {
-            return res.status(404).json({ error: "User not found" });
-        }
+    const user = await User.findByPk(req.user.id);
 
-        await user.destroy();
-        res.clearCookie("token");
+    await user.destroy();
 
-        res.json({ message: "Account deleted successfully" });
-    } catch (error) {
-        res.status(500).json({ error: "Failed to delete account" });
-    }
+    await req.audit.logAction("DELETE_ACCOUNT", user.id);
+
+    res.clearCookie("token");
+
+    res.redirect("/signup");
 };
+
+
+// =====================
+// FORGOT PASSWORD
+// =====================
 
 exports.forgotPassword = async (req, res) => {
-    try {
-        const { email, password } = req.body;
 
-        const user = await User.findOne({ where: { email } });
+    const { email, password } = req.body;
 
-        if (!user) {
-            return res.status(404).json({ error: "User not found" });
-        }
+    const user = await User.findOne({ where: { email } });
 
-        user.password = await hashPassword(password);
-
-        await user.save();
-
-        res.json({ message: "Password updated successfully" });
-    } catch (error) {
-        res.status(500).json({ error: "Failed to update password" });
+    if (!user) {
+        req.flash("error", "User not found");
+        return res.redirect("/forgot");
     }
+
+    user.password = await hashPassword(password);
+    await user.save();
+
+    await req.audit.logAction("PASSWORD_RESET", user.id);
+
+    req.flash("success", "Password updated");
+    res.redirect("/login");
 };
+
+
+// =====================
+// LOGOUT
+// =====================
 
 exports.logout = (req, res) => {
     res.clearCookie("token");
-    res.json({ message: "Logged out successfully" });
-};
-
-exports.updateSettings = async (req, res) => {
-    try {
-        // Mocks a successful configuration update. The Audit SDK middleware
-        // will automatically intercept this request and log the body attributes.
-        res.json({ message: "System configuration updated successfully", settings: req.body });
-    } catch (error) {
-        res.status(500).json({ error: "Failed to update configuration" });
-    }
+    res.redirect("/login");
 };

@@ -6,15 +6,11 @@ function initDatabase() {
 
     sequelize = new Sequelize({
         dialect: "sqlite",
-        storage: "audit.db",
-        logging:false
+        storage: "./audit.sqlite",
+        logging: false
     })
 
     return sequelize
 }
 
-function getDB(){
-    return sequelize
-}
-
-module.exports = {initDatabase,getDB}
+module.exports = { initDatabase }
