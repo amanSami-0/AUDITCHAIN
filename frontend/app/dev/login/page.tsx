@@ -2,21 +2,20 @@
 
 import React, { useState, useRef } from "react";
 import gsap from "gsap";
-import { fetchApi } from "../lib/api";
+import { fetchApi } from "../../lib/api";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 
-export default function Home() {
+export default function DevLogin() {
   const router = useRouter();
 
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
-  const [rememberMe, setRememberMe] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [loading, setLoading] = useState(false);
-  
+
   const buttonRef = useRef(null);
-  
+
   const handleMouseEnter = () => {
     gsap.to(buttonRef.current, {
       scale: 1.05,
@@ -39,15 +38,13 @@ export default function Home() {
     setLoading(true);
 
     try {
-      // The proxy rewrites this to http://localhost:3000/login
-      const data = await fetchApi('/login', {
+      const data = await fetchApi('/dev/login', {
         method: 'POST',
-        body: JSON.stringify({ email, password })
+        body: JSON.stringify({ username, password })
       });
 
-      // Login successful! Save token or user intent if needed, then redirect
-      console.log('Login successful', data);
-      router.push('/profile'); // Redirect to profile or dashboard page
+      console.log('Admin login successful', data);
+      router.push('/dev/dashboard');
     } catch (err: any) {
       setErrorMsg(err.message || "Failed to login. Please try again.");
     } finally {
@@ -55,64 +52,60 @@ export default function Home() {
     }
   };
 
-
   return (
     <div className="relative min-h-screen w-full bg-[#0a0a0a] flex items-center justify-center overflow-hidden selection:bg-white/20 ">
 
-     <div className="absolute inset-0 pointer-events-none overflow-hidden">
-
-
-      <div className="absolute top-[48%] left-[30%] -translate-x-1/2 -translate-y-1/2
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-[48%] left-[30%] -translate-x-1/2 -translate-y-1/2
         w-[600px] h-[600px] rounded-full
-        bg-[radial-gradient(circle,_rgba(176,58,46,0.70)_0%,_rgba(176,58,46,0.40)_35%,_rgba(176,58,46,0.12)_60%,_transparent_75%)]
+        bg-[radial-gradient(circle,_rgba(37,99,235,0.70)_0%,_rgba(37,99,235,0.40)_35%,_rgba(37,99,235,0.12)_60%,_transparent_75%)]
         blur-[80px]" />
 
-  <div className="absolute top-[70%] left-[72%] -translate-x-1/2 -translate-y-1/2
+        <div className="absolute top-[70%] left-[72%] -translate-x-1/2 -translate-y-1/2
           w-[600px] h-[600px] rounded-full
           bg-[radial-gradient(circle,_rgba(255,255,255,0.35)_0%,_rgba(255,255,255,0.18)_35%,_rgba(255,255,255,0.08)_55%,_transparent_70%)]
           blur-[80px]" />
-    </div>
+      </div>
+
       {/* Login Card */}
       <main className="relative z-10 w-full max-w-md px-6">
-         <div className="bg-white/[0.03] backdrop-blur-2xl border border-white/10 rounded-[32px] p-8 md:p-12 shadow-2xl opacity-0 animate-[fadeUp_0.6s_ease-out_0.1s_forwards]">
+        <div className="bg-[#111111]/80 backdrop-blur-2xl border border-white/10 rounded-[32px] p-8 md:p-12 shadow-[0_0_50px_rgba(37,99,235,0.15)] opacity-0 animate-[fadeUp_0.6s_ease-out_0.1s_forwards]">
           <header className="text-center mb-10">
             <h1 className="text-4xl font-light text-white tracking-tight mb-2">
-              Login
+              Admin Portal
             </h1>
             <p className="text-neutral-400 text-sm">
-              Welcome back, please enter your details.
+              Authorized personnel only.
             </p>
           </header>
 
           <form className="space-y-6" onSubmit={handleLogin}>
-            
+
             {errorMsg && (
               <div className="p-3 bg-red-500/20 border border-red-500/50 rounded-xl text-red-400 text-sm text-center">
                 {errorMsg}
               </div>
             )}
 
-            {/* Email (replaces Username for compatibility with backend) */}
             <div className="space-y-2">
               <label
-                htmlFor="email"
+                htmlFor="username"
                 className="block text-[10px] font-semibold text-neutral-500 uppercase tracking-[0.2em] ml-1"
               >
-                Email
+                Developer Username
               </label>
 
               <input
-                type="email"
-                id="email"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="john@example.com"
+                type="text"
+                id="username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="dev_admin"
                 required
                 className="w-full h-12 px-4 bg-white/[0.05] border border-white/10 rounded-xl text-white placeholder-neutral-600 focus:outline-none focus:border-white/30 focus:bg-white/[0.08]"
               />
             </div>
 
-            {/* Password */}
             <div className="space-y-2">
               <label
                 htmlFor="password"
@@ -132,44 +125,6 @@ export default function Home() {
               />
             </div>
 
-            {/* Remember + Forgot */}
-            <div className="flex items-center justify-between text-xs">
-
-              <label className="flex items-center space-x-2 cursor-pointer group">
-                <div className="relative flex items-center justify-center">
-
-                  <input
-                    type="checkbox"
-                    checked={rememberMe}
-                    onChange={() => setRememberMe(!rememberMe)}
-                    className="peer sr-only"
-                  />
-
-                  <div className="w-4 h-4 border border-white/20 rounded bg-white/5 peer-checked:bg-white peer-checked:border-white" />
-
-                  <svg
-                    className={`absolute w-3 h-3 text-black ${rememberMe ? "opacity-100" : "opacity-0"}`}
-                    fill="none"
-                    viewBox="0 0 24 24"
-                    stroke="currentColor"
-                    strokeWidth={4}
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                  </svg>
-
-                </div>
-
-                <span className="text-neutral-400 group-hover:text-white">
-                  Remember Me
-                </span>
-              </label>
-
-              <Link href="/forgot" className="text-neutral-400 hover:text-white">
-                Forgot Password?
-              </Link>
-
-            </div>
-
             {/* Submit */}
             <button
               ref={buttonRef}
@@ -177,17 +132,17 @@ export default function Home() {
               onMouseLeave={handleMouseLeave}
               type="submit"
               disabled={loading}
-              className="w-full h-12 bg-white text-black font-semibold rounded-xl transition-colors hover:bg-neutral-200 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full h-12 bg-white text-black font-semibold rounded-xl transition-colors hover:bg-neutral-200 disabled:opacity-50 disabled:cursor-not-allowed mt-4 shadow-[0_0_15px_rgba(255,255,255,0.4)] hover:shadow-[0_0_25px_rgba(255,255,255,0.6)]"
             >
-              {loading ? "Signing In..." : "Sign In"}
+              {loading ? "Authenticating..." : "Establish Connection"}
             </button>
 
           </form>
 
           <footer className="mt-10 text-center text-sm text-neutral-500">
-            Don&apos;t have an account?{" "}
-            <Link href="/signup" className="text-neutral-300 hover:text-white font-medium underline underline-offset-4">
-              Sign up
+            Unregistered operator?{" "}
+            <Link href="/dev/signup" className="text-neutral-300 hover:text-white font-medium underline underline-offset-4">
+              Request Access
             </Link>
           </footer>
 

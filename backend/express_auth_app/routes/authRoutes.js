@@ -12,12 +12,13 @@ router.get("/profile", authUser, authController.profile);
 
 router.post("/update", authUser, authController.update);
 
+router.post("/settings", authUser, authController.updateSettings);
+
 router.post("/delete", authUser, authController.deleteAccount);
 
 router.post("/forgot", authController.forgotPassword);
 
 router.post("/logout", authController.logout);
 
-router.post("/settings", authUser, authController.updateSettings);
 
 module.exports = router;

@@ -1,33 +1,33 @@
 const { DataTypes } = require("sequelize")
-const { getDB } = require("../database")
 
-function AuditLogModel(){
+module.exports = (sequelize) => {
 
-    const sequelize = getDB()
+    return sequelize.define("AuditLog", {
 
-    return sequelize.define("AuditLog",{
+        action: DataTypes.STRING,
+        attribute_name: DataTypes.STRING,
 
-        id:{
-            type:DataTypes.INTEGER,
-            primaryKey:true,
-            autoIncrement:true
+        page: DataTypes.STRING,
+
+        method: DataTypes.STRING,
+
+        user_id: DataTypes.INTEGER,
+
+        ip_address: DataTypes.STRING,
+
+        user_agent: DataTypes.STRING,
+
+        status: DataTypes.STRING,
+
+        attempt_count: DataTypes.INTEGER,
+
+        visit_count: {
+            type: DataTypes.INTEGER,
+            defaultValue: 1
         },
 
-        user_id:DataTypes.INTEGER,
+        previous_hash: DataTypes.STRING,
 
-        action:DataTypes.STRING,
-
-        attribute_name:DataTypes.STRING,
-
-        ip_address:DataTypes.STRING,
-
-        user_agent:DataTypes.STRING,
-
-        previous_hash:DataTypes.STRING,
-
-        current_hash:DataTypes.STRING
-
+        current_hash: DataTypes.STRING
     })
 }
-
-module.exports = AuditLogModel

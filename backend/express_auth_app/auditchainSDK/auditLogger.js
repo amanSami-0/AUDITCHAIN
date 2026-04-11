@@ -1,51 +1,77 @@
-const generateHash = require("./hash")
-const AuditLogModel = require("./models/AuditLog")
+const { generateHash } = require("./hash")
+const EventEmitter = require("events")
 
+const auditEvents = new EventEmitter()
+exports.events = auditEvents
 let AuditLog
 
-async function init(sequelize){
+// =====================
+// INIT
+// =====================
+exports.init = async (sequelize) => {
 
-    AuditLog = AuditLogModel()
+    AuditLog = require("./models/AuditLog")(sequelize)
 
-    await sequelize.sync()
+    // 🔥 force reset to ensure all columns exist
+    await AuditLog.sync({ force: true })
+
+    console.log("✅ AuditLog table created")
 }
 
-async function log({userId,action,attribute,req}){
 
-    const last = await AuditLog.findOne({
-        order:[["id","DESC"]]
-    })
+// =====================
+// MAIN LOG FUNCTION
+// =====================
+exports.log = async (data) => {
 
-    const previousHash = last ? last.current_hash : "0"
+    try {
 
-    const timestamp = new Date().toISOString()
+        // =====================
+        // 🔥 PAGE VISIT AGGREGATION
+        // =====================
+        if (data.action === "PAGE_VISIT") {
 
-    const data = JSON.stringify({
-        userId,
-        action,
-        attribute,
-        timestamp,
-        previousHash
-    })
+            const lastLog = await AuditLog.findOne({
+                order: [["id", "DESC"]]
+            })
 
-    const currentHash = generateHash(data)
+            if (
+                lastLog &&
+                lastLog.action === "PAGE_VISIT" &&
+                lastLog.page === data.page &&
+                lastLog.ip_address === data.ip_address
+            ) {
+                lastLog.visit_count += 1
+                await lastLog.save()
+                return
+            }
+        }
 
-    await AuditLog.create({
+        // =====================
+        // 🔗 HASH CHAIN
+        // =====================
+        const lastLog = await AuditLog.findOne({
+            order: [["id", "DESC"]]
+        })
 
-        user_id:userId,
+        const previous_hash = lastLog ? lastLog.current_hash : "GENESIS"
 
-        action,
+        const logData = {
+            ...data,
+            previous_hash
+        }
 
-        attribute_name:attribute,
+        const current_hash = generateHash(logData)
 
-        ip_address:req.ip,
+        const newLog = await AuditLog.create({
+            ...logData,
+            current_hash
+        })
 
-        user_agent:req.headers["user-agent"],
+        // 🔥 Broadcast new log to real-time subscribers
+        auditEvents.emit("new_log", newLog)
 
-        previous_hash:previousHash,
-
-        current_hash:currentHash
-    })
+    } catch (err) {
+        console.error("Audit Log Error:", err)
+    }
 }
-
-module.exports = {init,log}

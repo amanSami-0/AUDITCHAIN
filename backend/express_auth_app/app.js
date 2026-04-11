@@ -54,35 +54,36 @@ app.use(session({
    AUDIT SDK
 ===================== */
 
-audit.init()
+audit.init().then(() => {
+    app.use(audit.middleware())
+    app.use("/audit", audit.dashboard)
 
-app.use(audit.middleware())
+    /* =====================
+       ROUTES
+    ===================== */
 
-app.use("/audit", audit.dashboard)
+    app.get("/", (req, res) => {
+        res.json({ status: "AuditChain API is running. Please access the App via the Next.js Frontend." });
+    });
 
-/* =====================
-   ROUTES
-===================== */
+    app.use("/", authRoutes)
 
-app.get("/", (req, res) => {
-    res.json({ status: "AuditChain API is running. Please access the App via the Next.js Frontend." });
-});
+    /* =====================
+       DATABASE + SERVER
+    ===================== */
 
-app.use("/", authRoutes)
+    sequelize.sync().then(() => {
 
-/* =====================
-   DATABASE + SERVER
-===================== */
+        console.log("Database Connected")
 
-sequelize.sync().then(() => {
+        app.listen(3000, () => {
+            console.log("Server running at http://localhost:3000")
+            console.log("Audit dashboard at http://localhost:3000/audit")
+        })
 
-    console.log("Database Connected")
-
-    app.listen(3000, () => {
-        console.log("Server running at http://localhost:3000")
-        console.log("Audit dashboard at http://localhost:3000/audit")
+    }).catch(err => {
+        console.log("Database error:", err)
     })
-
 }).catch(err => {
-    console.log("Database error:", err)
-})
+    console.error("Failed to initialize audit SDK:", err);
+});

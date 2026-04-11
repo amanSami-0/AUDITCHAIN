@@ -20,4 +20,5 @@ dist/
 build/
 node_modules
 .next/
+frontend/.next
 .env
