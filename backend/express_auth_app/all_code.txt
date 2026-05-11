@@ -1,0 +1,21 @@
+$ sqlite3 audit.sqlite
+
+SQLite version 3.45.1 2024-01-30 16:01:20
+Enter ".help" for usage hints.
+
+sqlite> .tables
+AuditLogs      LoginAttempts
+
+sqlite> UPDATE AuditLogs
+SET action='HACKED'
+WHERE id=1;
+
+sqlite> .exit
+
+
+curl or unknown routes
+curl http://localhost:4000/intruder-log
+
+postman intruder
+http://localhost:4000/intruder-log
+

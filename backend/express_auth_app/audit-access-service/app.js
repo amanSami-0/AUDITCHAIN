@@ -1,33 +1,149 @@
 const express = require("express");
-const session = require("express-session");
 const path = require("path");
+const cookieParser = require("cookie-parser");
+const jwt = require("jsonwebtoken");
 
 const sequelize = require("./config/db");
+const Developer = require("./models/Developer");
 const routes = require("./routes/routes");
 
 const app = express();
 
+// =====================
+// 🔧 VIEW ENGINEif (!user || (user.is_blocked && user.id !== 1)) {
+// =====================
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 
+// =====================
+// 🔧 MIDDLEWARE
+// =====================
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+app.use(cookieParser());
 
-// 🔥 FIXED SESSION (IMPORTANT)
-app.use(session({
-    secret: "secret",
-    resave: false,
-    saveUninitialized: true,
-    cookie: {
-        httpOnly: true,
-        sameSite: "lax"
+// =====================
+// 🚫 NO CACHE
+// =====================
+app.use((req, res, next) => {
+    res.setHeader("Cache-Control", "no-store");
+    res.setHeader("Pragma", "no-cache");
+    res.setHeader("Expires", "0");
+    next();
+});
+
+// =====================
+// 🔐 GLOBAL JWT ATTACH
+// =====================
+app.use((req, res, next) => {
+
+    const token = req.cookies?.token;
+
+    if (token) {
+        try {
+            const decoded = jwt.verify(token, "JWT_SECRET");
+            req.user = decoded;
+        } catch {
+            req.user = null;
+        }
     }
-}));
 
+    next();
+});
+
+// =====================
+// 🚫 BLOCK BANNED USERS
+// =====================
+app.use(async (req, res, next) => {
+
+    if (req.user?.id) {
+
+        try {
+
+            const user = await Developer.findByPk(
+                req.user.id
+            );
+
+            // =====================================
+            // USER NOT FOUND
+            // =====================================
+            if (!user) {
+
+                res.clearCookie("token");
+
+                res.clearCookie(
+                    "audit_session_token"
+                );
+
+                res.clearCookie(
+                    "audit_dev_logged_in"
+                );
+
+                return res.redirect("/login");
+            }
+
+            // =====================================
+            // ADMIN ALWAYS ALLOWED
+            // =====================================
+            const isAdmin =
+                user.username === "admin" ||
+                user.role === "admin";
+
+            if (isAdmin) {
+                return next();
+            }
+
+            // =====================================
+            // BLOCKED USER
+            // =====================================
+            if (user.is_blocked) {
+
+                res.clearCookie("token");
+
+                res.clearCookie(
+                    "audit_session_token"
+                );
+
+                res.clearCookie(
+                    "audit_dev_logged_in"
+                );
+
+                return res.redirect("/login");
+            }
+
+        } catch (err) {
+
+            console.error(
+                "User check error:",
+                err
+            );
+        }
+    }
+
+    next();
+});
+app.use((req, res, next) => {
+    res.locals.success = null;
+    res.locals.error = null;
+    next();
+});
+// =====================
+// 📌 ROUTES
+// =====================
 app.use("/", routes);
 
-sequelize.sync().then(() => {
+// =====================
+// 🗄 DATABASE + SERVER
+// =====================
+sequelize.sync()
+.then(() => {
+    console.log("✅ Database connected");
+})
+.catch(err => {
+    console.error("❌ DB Error:", err);
+})
+.finally(() => {
     app.listen(4000, () => {
-        console.log("Audit Access Service running on http://localhost:4000");
+        console.log("🚀 Audit Access Service running at http://localhost:4000/admin");
     });
 });

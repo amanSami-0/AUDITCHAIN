@@ -1,30 +1,28 @@
-const { initDatabase } = require("./database")
-const auditLogger = require("./auditLogger")
-const createMiddleware = require("./middleware")
-const createDashboard = require("./dashboard")
+const { initDatabase } = require("./database");
 
-let sequelize
-let middlewareInstance
-let dashboardInstance
+const auditLogger = require("./auditLogger");
+
+const createMiddleware = require("./middleware");
+
+const dashboardRouter = require("./dashboard");
+
+let sequelize;
+
+let middlewareInstance;
 
 // =====================
-// INIT FUNCTION
+// INIT
 // =====================
 async function init() {
 
-    // ✅ Initialize single DB instance
-    sequelize = initDatabase()
+    sequelize = initDatabase();
 
-    // ✅ Initialize AuditLog model + table
-    await auditLogger.init(sequelize)
+    await auditLogger.init(sequelize);
 
-    // ✅ Create middleware (pass DB + logger)
-    middlewareInstance = createMiddleware(sequelize, auditLogger)
+    middlewareInstance =
+        createMiddleware(sequelize, auditLogger);
 
-    // ✅ Create dashboard router (same DB)
-    dashboardInstance = createDashboard(sequelize)
-
-    console.log("✅ AuditChain SDK Initialized")
+    console.log("✅ AuditChain SDK Initialized");
 }
 
 // =====================
@@ -32,25 +30,24 @@ async function init() {
 // =====================
 module.exports = {
 
-    // 🔥 Initialize SDK
     init,
 
-    // 🔥 Middleware getter (used in app.js)
     middleware: () => {
+
         if (!middlewareInstance) {
-            throw new Error("Audit SDK not initialized. Call audit.init() first.")
+
+            throw new Error(
+                "Audit SDK not initialized"
+            );
         }
-        return middlewareInstance
+
+        return middlewareInstance;
     },
 
-    // 🔥 Dashboard route handler
-    dashboard: (req, res, next) => {
-        if (!dashboardInstance) {
-            return res.status(500).send("Audit dashboard not initialized")
-        }
-        return dashboardInstance(req, res, next)
-    },
+    // ✅ IMPORTANT
+    dashboard: dashboardRouter,
 
-    // 🔥 Direct log access (optional)
-    log: auditLogger.log
-}
+    log: auditLogger.log,
+
+    verifyChain: auditLogger.verifyChain
+};

@@ -1,145 +1,209 @@
 <!DOCTYPE html>
 <html>
 <head>
-
     <title>Admin Dashboard</title>
 
-    <!-- ✅ Bootstrap -->
+    <!-- ✅ BOOTSTRAP -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
-
 </head>
 
 <body class="bg-light">
 
 <div class="container mt-5">
 
-    <!-- 🔥 HEADER -->
+    <!-- HEADER -->
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2>🛠 Admin Dashboard</h2>
+        <h2>🛠️ Admin Dashboard</h2>
 
-        <div>
-            <a href="/access-logs" class="btn btn-primary me-2">
-                📊 View Access Logs
-            </a>
-        </div>
+        <a href="/access-logs" class="btn btn-primary">
+            📊 Access Logs
+        </a>
     </div>
 
-
-    <!-- ➕ ADD DEVELOPER -->
-    <div class="card mb-4 shadow-sm">
-        <div class="card-header bg-success text-white">
-            Add Trusted Developer
+    <!-- 🔥 FLASH MESSAGES -->
+    <% if (success && success.length > 0) { %>
+        <div class="alert alert-success alert-dismissible fade show">
+            <%= success %>
+            <button class="btn-close" data-bs-dismiss="alert"></button>
         </div>
+    <% } %>
 
-        <div class="card-body">
+    <% if (error && error.length > 0) { %>
+        <div class="alert alert-danger alert-dismissible fade show">
+            <%= error %>
+            <button class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    <% } %>
 
-            <form method="post" action="/register">
+    <!-- ===================== -->
+    <!-- REGISTER -->
+    <!-- ===================== -->
+    <div class="card p-3 mb-4 shadow-sm">
 
-                <div class="row mb-3">
+        <h5 class="mb-3">➕ Add Developer</h5>
 
-                    <div class="col">
-                        <input name="username" class="form-control" placeholder="Username" required>
-                    </div>
+        <form method="POST" action="/register">
 
-                    <div class="col">
-                        <input name="email" class="form-control" placeholder="Email" required>
-                    </div>
+            <div class="row g-2">
 
+                <div class="col-md-3">
+                    <input name="username" class="form-control" placeholder="Username" required>
                 </div>
 
-                <div class="row mb-3">
-
-                    <div class="col">
-                        <input name="dob" type="date" class="form-control" required>
-                    </div>
-
-                    <div class="col">
-                        <input name="password" type="password" class="form-control" placeholder="Password" required>
-                    </div>
-
+                <div class="col-md-3">
+                    <input name="email" class="form-control" placeholder="Email" required>
                 </div>
 
-                <button class="btn btn-success">➕ Add Developer</button>
+                <div class="col-md-2">
+                    <input type="date" name="dob" class="form-control" required>
+                </div>
 
-            </form>
+                <div class="col-md-2">
+                    <input type="password" name="password" class="form-control" placeholder="Password" required>
+                </div>
 
-        </div>
+                <div class="col-md-2">
+                    <button class="btn btn-success w-100">Add</button>
+                </div>
+
+            </div>
+
+        </form>
+
     </div>
 
-
-    <!-- 👨‍💻 DEVELOPERS TABLE -->
+    <!-- ===================== -->
+    <!-- TABLE -->
+    <!-- ===================== -->
     <div class="card shadow-sm">
 
         <div class="card-header bg-dark text-white">
-            Trusted Developers
+            Developer List
         </div>
 
         <div class="card-body">
 
-            <table class="table table-bordered table-hover">
+            <div class="table-responsive">
 
-                <thead class="table-light">
+                <table class="table table-bordered table-hover align-middle">
+
+                    <thead class="table-light">
+                        <tr>
+                            <th>ID</th>
+                            <th>Username</th>
+                            <th>Email</th>
+                            <th>DOB</th>
+                            <th>Status</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                    <% if (users.length === 0) { %>
+                        <tr>
+                            <td colspan="6" class="text-center text-danger">
+                                No developers found
+                            </td>
+                        </tr>
+                    <% } %>
+
+                    <% users.forEach(user => { %>
+
+                    <!-- 🔥 UPDATE FORM PER ROW -->
+                    <form method="POST" action="/update/<%= user.id %>">
+
                     <tr>
-                        <th>ID</th>
-                        <th>Username</th>
-                        <th>Email</th>
-                        <th>Status</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
 
-                <tbody>
+                        <td><%= user.id %></td>
 
-                <% users.forEach(u => { %>
-
-                    <tr>
-
-                        <td><%= u.id %></td>
-
-                        <td><%= u.username %></td>
-
-                        <td><%= u.email %></td>
+                        <!-- EDITABLE FIELDS -->
+                        <td>
+                            <input name="username" value="<%= user.username %>" class="form-control" required>
+                        </td>
 
                         <td>
-                            <% if (u.is_blocked) { %>
+                            <input name="email" value="<%= user.email %>" class="form-control" required>
+                        </td>
+
+                        <td>
+                          <input 
+    type="date"
+    name="dob"
+    value="<%= user.dob ? user.dob.slice(0,10) : '' %>"
+    class="form-control"
+    required
+>
+                        </td>
+
+                        <!-- STATUS -->
+                        <td>
+                            <% if (user.is_blocked) { %>
                                 <span class="badge bg-danger">Blocked</span>
                             <% } else { %>
                                 <span class="badge bg-success">Active</span>
                             <% } %>
                         </td>
 
+                        <!-- ACTIONS -->
                         <td>
 
-                            <!-- 🔓 UNBLOCK -->
-                            <% if (u.is_blocked) { %>
-                                <a href="/unblock/<%= u.id %>" 
-                                   class="btn btn-warning btn-sm me-1">
-                                   Unblock
-                                </a>
-                            <% } %>
+                            <div class="d-flex gap-1 flex-wrap">
 
-                            <!-- 🗑 DELETE -->
-                            <a href="/delete/<%= u.id %>" 
-                               class="btn btn-danger btn-sm"
-                               onclick="return confirm('Are you sure you want to delete this developer? This action cannot be undone!')">
-                               Delete
-                            </a>
+                                <!-- 🔥 UPDATE -->
+                                <button class="btn btn-primary btn-sm">
+                                    Update
+                                </button>
+
+                                <!-- 🔥 BAN / UNBAN -->
+                                <% if (user.is_blocked) { %>
+                                    <a href="/unblock/<%= user.id %>" 
+                                       class="btn btn-warning btn-sm">
+                                        Unban
+                                    </a>
+                                <% } else { %>
+                                    <a href="/ban/<%= user.id %>" 
+                                       class="btn btn-danger btn-sm">
+                                        Ban
+                                    </a>
+                                <% } %>
+
+                                <!-- DELETE -->
+                                <a href="/delete/<%= user.id %>" 
+                                   class="btn btn-dark btn-sm"
+                                   onclick="return confirm('Delete this developer?')">
+                                    Delete
+                                </a>
+
+                                <!-- ACTIVITY -->
+                                <a href="/developer-activity/<%= user.id %>" 
+                                   class="btn btn-info btn-sm">
+                                    Activity
+                                </a>
+
+                            </div>
 
                         </td>
 
                     </tr>
 
-                <% }) %>
+                    </form>
 
-                </tbody>
+                    <% }) %>
 
-            </table>
+                    </tbody>
+
+                </table>
+
+            </div>
 
         </div>
 
     </div>
 
 </div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
 
 </body>
 </html>

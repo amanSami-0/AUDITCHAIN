@@ -1,11 +1,10 @@
-const { DataTypes } = require("sequelize")
+const { DataTypes } = require("sequelize");
 
 module.exports = (sequelize) => {
 
     return sequelize.define("AuditLog", {
 
         action: DataTypes.STRING,
-        attribute_name: DataTypes.STRING,
 
         page: DataTypes.STRING,
 
@@ -15,7 +14,9 @@ module.exports = (sequelize) => {
 
         ip_address: DataTypes.STRING,
 
-        user_agent: DataTypes.STRING,
+        device: DataTypes.STRING,
+
+        location: DataTypes.STRING,   // 🌍 NEW
 
         status: DataTypes.STRING,
 
@@ -29,5 +30,5 @@ module.exports = (sequelize) => {
         previous_hash: DataTypes.STRING,
 
         current_hash: DataTypes.STRING
-    })
-}
+    });
+};

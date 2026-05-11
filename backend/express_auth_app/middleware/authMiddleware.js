@@ -4,18 +4,25 @@ exports.authUser = (req, res, next) => {
 
     const token = req.cookies?.token;
 
-    if (!token)
-        return res.status(401).json({ error: "Unauthorized" });
+    const publicRoutes = ["/login", "/signup", "/forgot"];
+
+    if (publicRoutes.includes(req.path) || req.path.startsWith("/audit")) {
+        return next();
+    }
+
+    if (!token) {
+        return res.redirect("/login");
+    }
 
     try {
 
         const decoded = jwt.verify(token, "JWT_SECRET");
 
-        req.user = decoded;
+        req.user = decoded || null; // ✅ SAFE
 
         next();
 
     } catch {
-        return res.status(401).json({ error: "Invalid token" });
+        return res.redirect("/login");
     }
 };

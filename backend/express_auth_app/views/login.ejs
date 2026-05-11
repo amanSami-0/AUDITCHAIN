@@ -23,7 +23,12 @@
 <p class="mt-3 text-center">
 Don't have an account? <a href="/signup">Signup</a>
 </p>
-
+<script>
+    // Always reload login page fresh
+    window.onload = function () {
+        window.history.forward();
+    };
+</script>
 </div>
 
 </div>

@@ -40,5 +40,25 @@
 
 </div>
 
+<!-- 🔥 REAL-TIME SESSION CHECK (ADDED ONLY) -->
+<script>
+setInterval(async () => {
+
+    try {
+        const res = await fetch("/session-status");
+        const data = await res.json();
+
+        if (!data.active) {
+            alert("⚠️ Session ended (kicked / banned / deleted)");
+            window.location.href = "/login";
+        }
+
+    } catch (err) {
+        console.log("Session check failed");
+    }
+
+}, 3000); // every 3 seconds
+</script>
+
 </body>
 </html>

@@ -5,14 +5,21 @@ const Developer = sequelize.define("Developer", {
 
     username: {
         type: DataTypes.STRING,
-        unique: true
+        unique: true,
+        allowNull: false
     },
 
-    email: DataTypes.STRING,
+    email: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
 
     dob: DataTypes.DATEONLY,
 
-    password: DataTypes.STRING,
+    password: {
+        type: DataTypes.STRING,
+        allowNull: false
+    },
 
     attempts: {
         type: DataTypes.INTEGER,
@@ -22,6 +29,12 @@ const Developer = sequelize.define("Developer", {
     is_blocked: {
         type: DataTypes.BOOLEAN,
         defaultValue: false
+    },
+
+    // 🔥 FIXED (comma above + proper placement)
+    blocked_until: {
+        type: DataTypes.DATE,
+        allowNull: true
     }
 
 });

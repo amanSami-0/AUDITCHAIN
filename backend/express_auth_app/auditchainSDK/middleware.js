@@ -1,9 +1,8 @@
-const { DataTypes, Op } = require("sequelize")
+const { DataTypes } = require("sequelize");
 
-const MAX_ATTEMPTS = 3
-const MAX_DEVICES = 3
-const TIME_WINDOW = 5 * 60 * 1000
-const BLOCK_TIME = 10 * 60 * 1000
+const MAX_ATTEMPTS = 5;
+const TIME_WINDOW = 5 * 60 * 1000;
+const BLOCK_TIME = 10 * 60 * 1000;
 
 module.exports = (sequelize, auditLogger) => {
 
@@ -14,9 +13,9 @@ module.exports = (sequelize, auditLogger) => {
         attempts: { type: DataTypes.INTEGER, defaultValue: 0 },
         last_attempt: DataTypes.DATE,
         blocked_until: DataTypes.DATE
-    })
+    });
 
-    LoginAttempt.sync()
+    LoginAttempt.sync();
 
     return async (req, res, next) => {
 
@@ -24,101 +23,135 @@ module.exports = (sequelize, auditLogger) => {
 
             const ip =
                 req.headers["x-forwarded-for"]?.split(",")[0] ||
-                req.socket.remoteAddress
+                req.socket?.remoteAddress ||
+                "UNKNOWN";
 
-            const user_agent = req.headers["user-agent"]
+            const device = req.headers["user-agent"] || "UNKNOWN";
 
-            // =====================
-            // PAGE VISIT
-            // =====================
-            if (req.method === "GET") {
-                await auditLogger.log({
-                    action: "PAGE_VISIT",
-                    page: req.path,
-                    method: req.method,
-                    ip_address: ip,
-                    user_agent,
-                    status: "INFO"
-                })
+            // =====================================
+            // 🔥 FIXED AUDIT ROUTE SKIP
+            // =====================================
+            if (
+                req.originalUrl.startsWith("/audit") ||
+                req.baseUrl.startsWith("/audit")
+            ) {
+                return next();
             }
 
+            // =====================================
+            // STATIC FILES
+            // =====================================
+            if (
+                req.path.startsWith("/css") ||
+                req.path.startsWith("/js") ||
+                req.path.startsWith("/images") ||
+                req.path.startsWith("/public")
+            ) {
+                return next();
+            }
+
+            // =====================================
+            // PAGE VISIT
+            // =====================================
+         // =====================================
+// PAGE VISIT
+// =====================================
+if (req.method === "GET") {
+
+    // =====================================
+    // SKIP AUTO REDIRECT AFTER SIGNUP
+    // =====================================
+if (
+
+    req.path === "/login" &&
+
+    req.headers.referer &&
+
+    req.headers.referer.includes("/signup") &&
+
+    !req.headers.accept?.includes("text/html")
+
+) {
+
+    return next();
+}
+
+    // =====================================
+    // ONLY LOG REAL PAGE NAVIGATIONS
+    // =====================================
+    const acceptHeader =
+        req.headers.accept || "";
+
+    if (
+        !acceptHeader.includes("text/html")
+    ) {
+
+        return next();
+    }
+
+    await auditLogger.log({
+        action: "PAGE_VISIT",
+        page: req.path,
+        method: req.method,
+        user_id: req.user?.id || null,
+        ip_address: ip,
+        device,
+        location: "Unknown",
+        status: "INFO"
+    });
+}
+
+            // =====================================
+            // AUDIT FUNCTIONS
+            // =====================================
             req.audit = {
 
-                // =====================
-                // GENERIC ACTION LOG
-                // =====================
-                logAction: async (action, user_id = null, attribute_name = null) => {
+                logAction: async (action, user_id = null) => {
+
                     await auditLogger.log({
                         action,
-                        attribute_name,
                         page: req.path,
                         method: req.method,
-                        user_id,
+                        user_id: user_id || req.user?.id || null,
                         ip_address: ip,
-                        user_agent,
+                        device,
+                        location: "Unknown",
                         status: "SUCCESS"
-                    })
+                    });
                 },
 
-                // =====================
-                // LOGIN TRACKING (FULL)
-                // =====================
-                trackLogin: async (email, success = null, user_id = null) => {
+                trackLogin: async (email, success, user_id = null) => {
 
-                    const now = new Date()
-
-                    // 🔴 BLOCK CHECK ONLY
-                    if (success === null) {
-
-                        const blockedRecord = await LoginAttempt.findOne({
-                            where: {
-                                email,
-                                blocked_until: {
-                                    [Op.gt]: now
-                                }
-                            }
-                        })
-
-                        if (blockedRecord) {
-                            await auditLogger.log({
-                                action: "LOGIN_BLOCKED",
-                                page: "/login",
-                                method: "POST",
-                                user_id,
-                                ip_address: ip,
-                                user_agent,
-                                status: "BLOCKED"
-                            })
-                        }
-
-                        return { blocked: !!blockedRecord }
+                    if (!email || success === null || success === undefined) {
+                        return { blocked: false };
                     }
 
                     let record = await LoginAttempt.findOne({
                         where: { email, ip_address: ip }
-                    })
+                    });
+
+                    const now = new Date();
 
                     if (!record) {
                         record = await LoginAttempt.create({
                             email,
                             ip_address: ip,
-                            user_agent,
+                            device,
                             attempts: 0,
                             last_attempt: now
-                        })
+                        });
                     }
 
-                    // 🔴 GLOBAL BLOCK CHECK
-                    const blockedRecord = await LoginAttempt.findOne({
-                        where: {
-                            email,
-                            blocked_until: {
-                                [Op.gt]: now
-                            }
-                        }
-                    })
+                    if (record.blocked_until && now > record.blocked_until) {
+                        record.blocked_until = null;
+                        record.attempts = 0;
+                        await record.save();
+                    }
 
-                    if (blockedRecord) {
+                    if (record.blocked_until && now < record.blocked_until) {
+
+                        record.attempts += 1;
+                        await record.save();
 
                         await auditLogger.log({
                             action: "LOGIN_BLOCKED",
@@ -126,74 +159,32 @@ module.exports = (sequelize, auditLogger) => {
                             method: "POST",
                             user_id,
                             ip_address: ip,
-                            user_agent,
+                            device,
+                            location: "Unknown",
                             status: "BLOCKED",
-                            attempt_count: blockedRecord.attempts
-                        })
+                            attempt_count: record.attempts
+                        });
 
-                        return { blocked: true }
+                        return { blocked: true };
                     }
 
-                    // =====================
-                    // MULTI DEVICE DETECTION
-                    // =====================
-                    const uniqueIPs = await LoginAttempt.count({
-                        where: { email },
-                        distinct: true,
-                        col: "ip_address"
-                    })
-
-                    if (uniqueIPs >= MAX_DEVICES) {
-
-                        const blockTime = new Date(Date.now() + BLOCK_TIME)
-
-                        await LoginAttempt.update(
-                            { blocked_until: blockTime },
-                            { where: { email } }
-                        )
-
-                        await auditLogger.log({
-                            action: "MULTI_DEVICE_ATTACK",
-                            page: "/login",
-                            method: "POST",
-                            user_id,
-                            ip_address: ip,
-                            user_agent,
-                            status: "SUSPICIOUS",
-                            attempt_count: uniqueIPs
-                        })
-
-                        return { blocked: true }
-                    }
-
-                    // RESET WINDOW
                     if (now - record.last_attempt > TIME_WINDOW) {
-                        record.attempts = 0
+                        record.attempts = 0;
                     }
 
-                    // =====================
-                    // ❌ FAILED LOGIN
-                    // =====================
                     if (!success) {
 
-                        record.attempts += 1
-                        record.last_attempt = now
+                        record.attempts += 1;
+                        record.last_attempt = now;
 
-                        let status = "FAILED"
+                        let status = "FAILED";
 
                         if (record.attempts >= MAX_ATTEMPTS) {
-
-                            status = "SUSPICIOUS"
-
-                            const blockTime = new Date(Date.now() + BLOCK_TIME)
-
-                            await LoginAttempt.update(
-                                { blocked_until: blockTime },
-                                { where: { email } }
-                            )
+                            status = "SUSPICIOUS";
+                            record.blocked_until = new Date(Date.now() + BLOCK_TIME);
                         }
 
-                        await record.save()
+                        await record.save();
 
                         await auditLogger.log({
                             action: "LOGIN_FAILED",
@@ -201,21 +192,20 @@ module.exports = (sequelize, auditLogger) => {
                             method: "POST",
                             user_id,
                             ip_address: ip,
-                            user_agent,
+                            device,
+                            location: "Unknown",
                             status,
                             attempt_count: record.attempts
-                        })
+                        });
 
-                        return { blocked: !!record.blocked_until }
+                        return { blocked: !!record.blocked_until };
                     }
 
-                    // =====================
-                    // ✅ SUCCESS LOGIN
-                    // =====================
-                    await LoginAttempt.update(
-                        { attempts: 0, blocked_until: null },
-                        { where: { email } }
-                    )
+                    const prevAttempts = record.attempts;
+
+                    record.attempts = 0;
+                    record.blocked_until = null;
+                    await record.save();
 
                     await auditLogger.log({
                         action: "LOGIN_SUCCESS",
@@ -223,19 +213,21 @@ module.exports = (sequelize, auditLogger) => {
                         method: "POST",
                         user_id,
                         ip_address: ip,
-                        user_agent,
-                        status: "LOGGED_IN"
-                    })
+                        device,
+                        location: "Unknown",
+                        status: "LOGGED_IN",
+                        attempt_count: prevAttempts
+                    });
 
-                    return { blocked: false }
+                    return { blocked: false };
                 }
-            }
+            };
 
-            next()
+            next();
 
         } catch (err) {
-            console.error("Middleware Error:", err)
-            next()
+            console.error("Middleware Error:", err);
+            next();
         }
-    }
-}
+    };
+};
