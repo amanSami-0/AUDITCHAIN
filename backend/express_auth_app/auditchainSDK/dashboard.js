@@ -256,6 +256,33 @@ const recalculatedHash =
                 console.log(
                     "🚨 RECORD HASH TAMPERING DETECTED"
                 );
+                try {
+
+    await axios.get(
+        "http://localhost:4000/intruder-log",
+        {
+            headers: {
+                Cookie:
+                    req.headers.cookie || ""
+            },
+            params: {
+                type: "DB_TAMPER"
+            },
+            withCredentials: true
+        }
+    );
+
+    console.log(
+        "🚨 DB TAMPER LOGGED"
+    );
+
+} catch (err) {
+
+    console.log(
+        "DB TAMPER LOG ERROR:",
+        err.message
+    );
+}
 
                 return res.json({
                     valid: false,
