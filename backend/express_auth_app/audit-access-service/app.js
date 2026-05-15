@@ -37,7 +37,7 @@ app.use((req, res, next) => {
 // =====================
 app.use((req, res, next) => {
 
-    const token = req.cookies?.token;
+    const token = req.cookies?.audit_token;
 
     if (token) {
         try {
@@ -69,7 +69,7 @@ app.use(async (req, res, next) => {
             // =====================================
             if (!user) {
 
-                res.clearCookie("token");
+                res.clearCookie("audit_token");
 
                 res.clearCookie(
                     "audit_session_token"
@@ -79,6 +79,7 @@ app.use(async (req, res, next) => {
                     "audit_dev_logged_in"
                 );
 
+                if (req.accepts('json')) return res.status(401).json({ error: "Unauthorized" });
                 return res.redirect("/login");
             }
 
@@ -98,7 +99,7 @@ app.use(async (req, res, next) => {
             // =====================================
             if (user.is_blocked) {
 
-                res.clearCookie("token");
+                res.clearCookie("audit_token");
 
                 res.clearCookie(
                     "audit_session_token"
@@ -108,6 +109,7 @@ app.use(async (req, res, next) => {
                     "audit_dev_logged_in"
                 );
 
+                if (req.accepts('json')) return res.status(403).json({ error: "Account blocked" });
                 return res.redirect("/login");
             }
 

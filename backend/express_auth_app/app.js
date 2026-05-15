@@ -223,6 +223,7 @@ app.set("view engine", "ejs")
 
 app.use(express.static(path.join(__dirname, "public")))
 app.use(bodyParser.urlencoded({ extended: true }))
+app.use(express.json())
 app.use(cookieParser())
 
 app.use(session({
@@ -263,11 +264,15 @@ async function auditAccessGuard(req, res, next) {
         // MUST HAVE COOKIES
         // =====================================
         if (
-            !req.cookies.token ||
+            !req.cookies.auth_token ||
             !req.cookies.audit_dev_logged_in
         ) {
 
             req.session.developerVerified = false;
+
+            if (req.accepts('json')) {
+                return res.status(401).json({ error: "Unauthorized. Please log in to the Dev Portal." });
+            }
 
             return res.redirect(
                 "http://localhost:4000/login"
@@ -295,11 +300,13 @@ async function auditAccessGuard(req, res, next) {
 
             req.session.developerVerified = false;
 
-            res.clearCookie("token");
-
             res.clearCookie("audit_dev_logged_in");
 
-            res.clearCookie("audit_session_token");
+            res.clearCookie("audit_token");
+
+            if (req.accepts('json')) {
+                return res.status(401).json({ error: "Session expired. Please log in again." });
+            }
 
             return res.redirect(
                 "http://localhost:4000/login"
@@ -321,6 +328,10 @@ async function auditAccessGuard(req, res, next) {
         );
 
         req.session.developerVerified = false;
+
+        if (req.accepts('json')) {
+            return res.status(500).json({ error: "Verification server (Port 4000) unreachable." });
+        }
 
         return res.redirect(
             "http://localhost:4000/login"

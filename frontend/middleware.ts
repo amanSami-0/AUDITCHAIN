@@ -9,7 +9,7 @@ export function middleware(request: NextRequest) {
   const isProtectedRoute = protectedRoutes.some((route) => pathname.startsWith(route));
 
   if (isProtectedRoute) {
-    const token = request.cookies.get('token');
+    const token = request.cookies.get('auth_token');
     console.log(`Protected Route: ${pathname} | Token status: ${token ? 'Found' : 'Not Found'}`);
 
     if (!token) {

@@ -2,7 +2,7 @@ const jwt = require("jsonwebtoken");
 
 exports.authUser = (req, res, next) => {
 
-    const token = req.cookies?.token;
+    const token = req.cookies?.auth_token;
 
     const publicRoutes = ["/login", "/signup", "/forgot"];
 
@@ -11,6 +11,7 @@ exports.authUser = (req, res, next) => {
     }
 
     if (!token) {
+        if (req.accepts('json')) return res.status(401).json({ error: "Unauthorized" });
         return res.redirect("/login");
     }
 
@@ -23,6 +24,7 @@ exports.authUser = (req, res, next) => {
         next();
 
     } catch {
+        if (req.accepts('json')) return res.status(401).json({ error: "Invalid token" });
         return res.redirect("/login");
     }
 };

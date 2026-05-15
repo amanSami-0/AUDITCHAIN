@@ -1,0 +1,4659 @@
+
+================================================================================
+FILE: README.md
+================================================================================
+
+# AuditChain
+
+AuditChain is a modern, premium web application that combines a robust Express.js backend with a sleek, animated Next.js frontend. It features secure user authentication, profile management, and a real-time system configuration portal—all backed by an immutable Audit Ledger that tracks system events automatically.
+
+## Project Structure
+
+This repository is split into two main directories:
+- `/BACKEND/express_auth_app`: The Express.js backend, SQLite database, and custom Audit SDK.
+- `/frontend`: The Next.js 15+ frontend application featuring a dark mode, glassmorphic UI.
+
+---
+
+## 🚀 Getting Started
+
+To run the full AuditChain application locally, you will need to start both the backend server and the frontend development server.
+
+### 1. Start the Backend (Express API)
+
+The backend handles all authentication, database interactions, and the Audit logging SDK.
+
+1. Open a new terminal.
+2. Navigate to the backend directory:
+   ```bash
+   cd "BACKEND/express_auth_app"
+   ```
+3. Install the required Node.js dependencies:
+   ```bash
+   npm install
+   ```
+4. Start the Express server:
+   ```bash
+   node app.js
+   ```
+   *(The backend server will start on `http://localhost:3000` and automatically initialize the local SQLite database).*
+
+---
+
+### 2. Start the Frontend (Next.js)
+
+The frontend contains the premium UI and proxies API requests to the backend securely.
+
+1. Open a **second** terminal window.
+2. Navigate to the frontend directory:
+   ```bash
+   cd frontend
+   ```
+3. Install the required Node.js dependencies:
+   ```bash
+   npm install
+   ```
+4. Start the Next.js development server:
+   ```bash
+   npm run dev
+   ```
+   *(The frontend will typically start on `http://localhost:3001` or `http://localhost:3000` depending on port availability. Check the terminal output for the exact local URL).*
+
+---
+
+## 🌟 Features
+
+Once both servers are running, open the frontend URL in your browser to experience the app:
+
+1. **Authentication Flow**: Create an account via `/signup`, and then sign in at `/login`.
+2. **Profile Management**: View and edit your secure profile details at `/profile` and `/update`.
+3. **Environment Controls**: Toggle global security settings (like MFA or Maintenance Mode) at `/settings`.
+4. **Audit Intelligence**: Navigate to `/audit` to view the comprehensive, immutable ledger. Every action you take (logging in, updating a profile, changing a setting) is automatically intercepted by the backend SDK and logged here in real-time.
+
+## Tech Stack
+- **Frontend:** Next.js, React, Tailwind CSS, GSAP (Animations), UA-Parser
+- **Backend:** Express.js, Sequelize ORM, SQLite3, JSON Web Tokens (JWT)
+
+
+================================================================================
+FILE: frontend/middleware.ts
+================================================================================
+
+import { NextResponse } from 'next/server';
+import type { NextRequest } from 'next/server';
+
+export function middleware(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+  console.log(`--- Middleware checking: ${pathname} ---`);
+
+  const protectedRoutes = ['/profile', '/audit', '/hashes', '/settings', '/update'];
+  const isProtectedRoute = protectedRoutes.some((route) => pathname.startsWith(route));
+
+  if (isProtectedRoute) {
+    const token = request.cookies.get('token');
+    console.log(`Protected Route: ${pathname} | Token status: ${token ? 'Found' : 'Not Found'}`);
+
+    if (!token) {
+      console.log(`Redirecting unauthorized user from ${pathname} to /login`);
+      const url = request.nextUrl.clone();
+      url.pathname = '/login';
+      return NextResponse.redirect(url);
+    }
+  }
+
+  if (pathname === '/') {
+    console.log(`Root path detected, redirecting to /login`);
+    const url = request.nextUrl.clone();
+    url.pathname = '/login';
+    return NextResponse.redirect(url);
+  }
+
+  return NextResponse.next();
+}
+
+export const config = {
+  matcher: [
+    '/',
+    '/profile/:path*',
+    '/audit/:path*',
+    '/hashes/:path*',
+    '/settings/:path*',
+    '/update/:path*',
+  ],
+};
+
+
+================================================================================
+FILE: frontend/postcss.config.mjs
+================================================================================
+
+const config = {
+  plugins: {
+    "@tailwindcss/postcss": {},
+  },
+};
+
+export default config;
+
+
+================================================================================
+FILE: frontend/next-env.d.ts
+================================================================================
+
+/// <reference types="next" />
+/// <reference types="next/image-types/global" />
+import "./.next/dev/types/routes.d.ts";
+
+// NOTE: This file should not be edited
+// see https://nextjs.org/docs/app/api-reference/config/typescript for more information.
+
+
+================================================================================
+FILE: frontend/README.md
+================================================================================
+
+This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+
+## Getting Started
+
+First, run the development server:
+
+```bash
+npm run dev
+# or
+yarn dev
+# or
+pnpm dev
+# or
+bun dev
+```
+
+Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+
+You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+
+This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+
+## Learn More
+
+To learn more about Next.js, take a look at the following resources:
+
+- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
+- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+
+You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+
+## Deploy on Vercel
+
+The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+
+Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+
+================================================================================
+FILE: frontend/package.json
+================================================================================
+
+{
+  "name": "frontend",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "eslint"
+  },
+  "dependencies": {
+    "gsap": "^3.14.2",
+    "motion": "^12.35.2",
+    "next": "^16.2.3",
+    "next-auth": "^4.24.13",
+    "react": "19.2.3",
+    "react-dom": "19.2.3",
+    "ua-parser-js": "^2.0.9"
+  },
+  "devDependencies": {
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "@types/ua-parser-js": "^0.7.39",
+    "eslint": "^9",
+    "eslint-config-next": "16.1.6",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}
+
+
+================================================================================
+FILE: frontend/tsconfig.json
+================================================================================
+
+{
+  "compilerOptions": {
+    "target": "ES2017",
+    "lib": ["dom", "dom.iterable", "esnext"],
+    "allowJs": true,
+    "skipLibCheck": true,
+    "strict": true,
+    "noEmit": true,
+    "esModuleInterop": true,
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "jsx": "react-jsx",
+    "incremental": true,
+    "plugins": [
+      {
+        "name": "next"
+      }
+    ],
+    "paths": {
+      "@/*": ["./*"]
+    }
+  },
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    ".next/types/**/*.ts",
+    ".next/dev/types/**/*.ts",
+    "**/*.mts"
+  ],
+  "exclude": ["node_modules"]
+}
+
+
+================================================================================
+FILE: frontend/eslint.config.mjs
+================================================================================
+
+import { defineConfig, globalIgnores } from "eslint/config";
+import nextVitals from "eslint-config-next/core-web-vitals";
+import nextTs from "eslint-config-next/typescript";
+
+const eslintConfig = defineConfig([
+  ...nextVitals,
+  ...nextTs,
+  // Override default ignores of eslint-config-next.
+  globalIgnores([
+    // Default ignores of eslint-config-next:
+    ".next/**",
+    "out/**",
+    "build/**",
+    "next-env.d.ts",
+  ]),
+]);
+
+export default eslintConfig;
+
+
+================================================================================
+FILE: frontend/next.config.ts
+================================================================================
+
+import type { NextConfig } from "next";
+
+const nextConfig: NextConfig = {
+  async rewrites() {
+    return [
+      {
+        source: '/api/dev/:path*',
+        destination: 'http://localhost:4000/:path*',
+      },
+      {
+        source: '/api/:path*',
+        destination: 'http://localhost:3000/:path*',
+      },
+    ]
+  },
+};
+
+export default nextConfig;
+
+
+================================================================================
+FILE: frontend/app/layout.tsx
+================================================================================
+
+import type { Metadata } from "next";
+import { Inter } from "next/font/google";
+import "./globals.css";
+
+const inter = Inter({ subsets: ["latin"] });
+
+export const metadata: Metadata = {
+  title: "Audit Chain Login",
+  description: "Login",
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html lang="en">
+      <body className={inter.className}>{children}</body>
+    </html>
+  );
+}
+
+
+================================================================================
+FILE: frontend/app/page.tsx
+================================================================================
+
+'use client';
+
+import { useState } from 'react';
+import { fetchApi } from './lib/api';
+
+export default function Home() {
+  const [status, setStatus] = useState<string>('Not tested');
+  const [data, setData] = useState<any>(null);
+
+  const testLogin = async () => {
+    try {
+      setStatus('Testing connection array...');
+      // We send a dummy login request to test the connection.
+      // Expected result: 401 Unauthorized or 404 User not found (which means connection succeeded)
+      const response = await fetchApi('/login', {
+        method: 'POST',
+        body: JSON.stringify({ email: 'test@example.com', password: 'password' })
+      });
+      setData(response);
+      setStatus('Success');
+    } catch (err: any) {
+      // Even if it's a 401 error, we want to show the specific error message returned by our API
+      // Our API proxy throws whatever error message comes back, or "API returned status..."
+      setStatus(`Resolved with Error: ${err.message}`);
+      // Usually if the backend responds, we connected successfully even if it's an error.
+    }
+  };
+
+  return (
+    <main className="flex min-h-screen flex-col items-center justify-center p-24 bg-zinc-950 text-white">
+      <div className="z-10 max-w-3xl w-full items-center justify-center font-mono text-sm flex flex-col">
+        <h1 className="text-4xl font-bold mb-8 bg-gradient-to-r from-blue-400 to-purple-600 bg-clip-text text-transparent">
+          AuditChain API Connection Test
+        </h1>
+        
+        <div className="bg-zinc-900 border border-zinc-800 p-8 rounded-xl shadow-2xl backdrop-blur-md bg-opacity-50 w-full text-center">
+          <p className="mb-6 text-zinc-300">Click below to test the Next.js API Proxy (`/api/*`) connected to the Express backend.</p>
+          <button 
+            onClick={testLogin}
+            className="px-6 py-3 rounded-lg bg-blue-600 hover:bg-blue-500 transition-colors shadow-[0_0_15px_rgba(37,99,235,0.4)] font-semibold"
+          >
+            Test Auth API (/api/login)
+          </button>
+          
+          <div className="mt-8 p-4 bg-black/50 rounded-lg border border-zinc-800/50 text-left">
+            <p className="text-xs text-zinc-500 mb-2">Status:</p>
+            <p className={`font-medium ${status.includes('Error') ? 'text-amber-400' : 'text-green-400'}`}>
+              {status}
+            </p>
+            <p className="text-xs text-zinc-500 mt-2">
+              Note: An &quot;Error&quot; status like &quot;User not found&quot; means the connection was actually successful, as the Express backend returned that API error!
+            </p>
+            
+            {data && (
+              <div className="mt-4">
+                <p className="text-xs text-zinc-500 mb-2">Response Data:</p>
+                <pre className="text-xs text-zinc-300 bg-zinc-900 p-4 rounded overflow-x-auto border border-zinc-800">
+                  {JSON.stringify(data, null, 2)}
+                </pre>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    </main>
+  );
+}
+
+================================================================================
+FILE: frontend/app/globals.css
+================================================================================
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+}
+@keyframes fadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes float {
+  0% {
+    transform: translate(-50%, -50%);
+  }
+  50% {
+    transform: translate(-48%, -52%);
+  }
+  100% {
+    transform: translate(-50%, -50%);
+  }
+}
+
+================================================================================
+FILE: frontend/app/settings/page.tsx
+================================================================================
+
+"use client";
+
+import React, { useState } from "react";
+import { fetchApi } from "../lib/api";
+import Link from "next/link";
+import gsap from "gsap";
+
+export default function Settings() {
+  const [maintenanceMode, setMaintenanceMode] = useState(false);
+  const [mfaEnabled, setMfaEnabled] = useState(false);
+  const [emailAlerts, setEmailAlerts] = useState(true);
+  const [syncBlockchain, setSyncBlockchain] = useState(false);
+  const [ipBinding, setIpBinding] = useState(false);
+  const [idleTimeout, setIdleTimeout] = useState(true);
+  const [darkWebSync, setDarkWebSync] = useState(false);
+  
+  const [loadingAction, setLoadingAction] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
+
+  const handleToggle = async (
+    settingKey: string,
+    currentValue: boolean,
+    setter: React.Dispatch<React.SetStateAction<boolean>>
+  ) => {
+    setLoadingAction(settingKey);
+    setSuccessMsg("");
+    
+    const newValue = !currentValue;
+    
+    // Optimistically update UI
+    setter(newValue);
+
+    try {
+      await fetchApi('/settings', {
+        method: 'POST',
+        body: JSON.stringify({ 
+          [settingKey]: newValue 
+        })
+      });
+      
+      setSuccessMsg(`"${settingKey}" ${newValue ? 'Enabled' : 'Disabled'}`);
+      setTimeout(() => setSuccessMsg(""), 3000);
+
+    } catch (err) {
+      // Revert if API failed
+      setter(currentValue);
+      setSuccessMsg(`Failed to update ${settingKey}.`);
+      setTimeout(() => setSuccessMsg(""), 3000);
+    } finally {
+      setLoadingAction("");
+    }
+  };
+
+  const createToggleUI = (
+    label: string, 
+    description: string, 
+    key: string, 
+    value: boolean, 
+    setter: React.Dispatch<React.SetStateAction<boolean>>
+  ) => {
+    return (
+      <div className="flex items-center justify-between p-5 bg-white/[0.02] border border-white/5 rounded-xl hover:bg-white/[0.04] transition-colors">
+        <div>
+            <h3 className="font-medium text-white text-sm mb-1 tracking-wide">{label}</h3>
+            <p className="text-xs text-neutral-500 max-w-[250px] md:max-w-none">{description}</p>
+        </div>
+        <button
+          onClick={() => handleToggle(key, value, setter)}
+          disabled={loadingAction === key}
+          className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none flex-shrink-0 disabled:opacity-50
+            ${value ? 'bg-blue-500' : 'bg-neutral-700'}
+          `}
+        >
+          <span className="sr-only">Enable {label}</span>
+          <span
+            className={`inline-block h-4 w-4 transform rounded-full bg-white transition-transform
+              ${value ? 'translate-x-6' : 'translate-x-1'}
+            `}
+          />
+        </button>
+      </div>
+    );
+  };
+
+  return (
+    <div className="relative min-h-screen w-full bg-[#0a0a0a] text-white selection:bg-white/20 pb-20">
+      
+      {/* Background Orbs */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+        <div className="absolute top-[30%] left-[80%] -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-[radial-gradient(circle,_rgba(59,130,246,0.15)_0%,_transparent_70%)] blur-[120px]" />
+      </div>
+
+      <div className="relative z-10 container mx-auto px-4 md:px-8 py-12 max-w-4xl">
+        
+        {/* Header */}
+        <header className="mb-10 flex flex-col md:flex-row md:items-end justify-between border-b border-white/10 pb-6 gap-4 animate-[fadeUp_0.4s_ease-out]">
+          <div>
+            <h1 className="text-3xl md:text-4xl font-light tracking-tight mb-2">System Configurations</h1>
+            <p className="text-neutral-400 text-sm">Manage global environment settings and security protocols.</p>
+          </div>
+          <div>
+             <Link href="/profile" className="px-5 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-sm transition-colors backdrop-blur-md inline-flex items-center gap-2 text-neutral-300 hover:text-white">
+               <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                   <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+               </svg>
+               Back to Profile
+             </Link>
+          </div>
+        </header>
+
+        {/* Success Toast */}
+        <div className={`fixed top-6 left-1/2 -translate-x-1/2 z-50 transition-all duration-300 ${successMsg ? 'opacity-100 translate-y-0' : 'opacity-0 -translate-y-4 pointer-events-none'}`}>
+             <div className="bg-emerald-500/20 border border-emerald-500/30 text-emerald-400 px-6 py-2.5 rounded-full backdrop-blur-md text-sm font-medium shadow-2xl flex items-center gap-2 tracking-wide font-mono">
+                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                     <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                 </svg>
+                 {successMsg}
+             </div>
+        </div>
+
+        {/* Content */}
+        <main className="animate-[fadeUp_0.6s_ease-out_0.1s_forwards] opacity-0 space-y-8">
+          
+          {/* Section 1 */}
+          <section className="bg-white/[0.02] backdrop-blur-2xl border border-white/10 rounded-2xl overflow-hidden shadow-2xl p-6 md:p-8">
+            <div className="mb-6 pb-4 border-b border-white/5">
+                <h2 className="text-sm uppercase tracking-[0.2em] font-bold text-neutral-500 flex items-center gap-2">
+                    <svg className="w-4 h-4 text-blue-500" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
+                    </svg>
+                    Security Protocol
+                </h2>
+            </div>
+            
+            <div className="space-y-3">
+                {createToggleUI("Multi-Factor Authentication", "Require MFA for all administrative accounts logging into the portal.", "MFA_ENABLED", mfaEnabled, setMfaEnabled)}
+                {createToggleUI("Login Activity Emails", "Send a real-time alert email upon every new session instantiation.", "EMAIL_ALERTS_ENABLED", emailAlerts, setEmailAlerts)}
+            </div>
+          </section>
+
+          {/* Section 2 */}
+          <section className="bg-white/[0.02] backdrop-blur-2xl border border-white/10 rounded-2xl overflow-hidden shadow-2xl p-6 md:p-8">
+            <div className="mb-6 pb-4 border-b border-white/5">
+                <h2 className="text-sm uppercase tracking-[0.2em] font-bold text-neutral-500 flex items-center gap-2">
+                    <svg className="w-4 h-4 text-emerald-500" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    </svg>
+                    Environment Controls
+                </h2>
+            </div>
+            
+            <div className="space-y-3">
+                {createToggleUI("Maintenance Mode", "Take the entire system offline for scheduled upgrades or scaling tasks.", "MAINTENANCE_MODE", maintenanceMode, setMaintenanceMode)}
+                {createToggleUI("Immutable Ledger Sync", "Continuously mirror application logs to the decentralized vault.", "BLOCKCHAIN_SYNC", syncBlockchain, setSyncBlockchain)}
+            </div>
+          </section>
+  
+          {/* Section 3 (NEW) */}
+          <section className="bg-white/[0.02] backdrop-blur-2xl border border-white/10 rounded-2xl overflow-hidden shadow-2xl p-6 md:p-8 space-y-3">
+            <div className="mb-6 pb-4 border-b border-white/5">
+                <h2 className="text-sm uppercase tracking-[0.2em] font-bold text-neutral-500 flex items-center gap-2">
+                    <svg className="w-4 h-4 text-purple-500" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
+                    </svg>
+                    Advanced Telemetry
+                </h2>
+            </div>
+            
+            <div className="space-y-3">
+                {createToggleUI("Strict IP Binding", "Lock all active operator sessions to their initial authorization IP address.", "IP_BINDING", ipBinding, setIpBinding)}
+                {createToggleUI("Session Timeout Enforcement", "Aggressively prune idle operator connections after 15 minutes of inactivity.", "IDLE_TIMEOUT", idleTimeout, setIdleTimeout)}
+                {createToggleUI("Dark Web Data Sync", "Continuously cross-reference signatures against compromised credential databases.", "DARK_WEB_SYNC", darkWebSync, setDarkWebSync)}
+            </div>
+          </section>
+
+        </main>
+      </div>
+    </div>
+  );
+}
+
+
+================================================================================
+FILE: frontend/app/hashes/page.tsx
+================================================================================
+
+import { headers } from 'next/headers';
+import Link from 'next/link';
+
+interface AuditLog {
+  id: number;
+  action: string;
+  user_id: string;
+  timestamp: string;
+  previous_hash: string;
+  current_hash: string;
+}
+
+// Reusable function to fetch audit logs (same as audit page)
+async function getAuditLogs() {
+  try {
+    const headersList = await headers();
+    const cookie = headersList.get('cookie') || '';
+    
+    // Determine the base URL for the API route
+    const protocol = process.env.NODE_ENV === 'production' ? 'https' : 'http';
+    const host = headersList.get('host') || 'localhost:3000';
+    const apiUrl = `${protocol}://${host}/api/audit`;
+
+    const res = await fetch(apiUrl, {
+      cache: 'no-store',
+      headers: {
+        'Cookie': cookie
+      }
+    });
+    
+    if (!res.ok) {
+      throw new Error('Failed to fetch audit logs');
+    }
+    
+    const data = await res.json();
+    return data.logs || [];
+  } catch (error) {
+    console.error('Error fetching audit logs:', error);
+    return [];
+  }
+}
+
+export default async function HashesPage() {
+  const logs: AuditLog[] = await getAuditLogs();
+  
+  // Sort logs to show oldest first (Genesis block at the top/beginning)
+  const sortedLogs = [...logs].sort((a, b) => {
+    return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
+  });
+
+  return (
+    <div className="min-h-screen bg-[#050505] text-white selection:bg-red-500/30 relative overflow-hidden font-sans">
+      {/* Background Ambience (Login Page Style) */}
+      <div className="fixed inset-0 z-0 pointer-events-none">
+        <div className="absolute top-[-20%] left-[-10%] w-[70vw] h-[70vw] rounded-full bg-[#1a0505] blur-[120px] opacity-70 mix-blend-screen animate-pulse" style={{ animationDuration: '8s' }}></div>
+        <div className="absolute bottom-[-20%] right-[-10%] w-[60vw] h-[60vw] rounded-full bg-[#2a0808] blur-[100px] opacity-60 mix-blend-screen animate-pulse" style={{ animationDuration: '10s', animationDelay: '1s' }}></div>
+        <div className="absolute top-[40%] left-[60%] w-[40vw] h-[40vw] rounded-full bg-[#150303] blur-[90px] opacity-80 mix-blend-screen animate-pulse" style={{ animationDuration: '12s', animationDelay: '2s' }}></div>
+      </div>
+
+      <div className="max-w-7xl mx-auto px-6 py-12 relative z-10 hidden sm:block">
+        
+        {/* Header Section */}
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-16 gap-6">
+          <div>
+            <div className="flex items-center gap-3 mb-4">
+              <svg className="w-8 h-8 text-cyan-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M14 10l-2 1m0 0l-2-1m2 1v2.5M20 7l-2 1m2-1l-2-1m2 1v2.5M14 4l-2-1-2 1M4 7l2-1M4 7l2 1M4 7v2.5M12 21l-2-1m2 1l2-1m-2 1v-2.5M6 18l-2-1v-2.5M18 18l2-1v-2.5" />
+              </svg>
+              <h1 className="text-4xl font-bold tracking-tight">The Data Matrix</h1>
+            </div>
+            <p className="text-neutral-400 max-w-xl text-lg font-light">
+              Visualizing the immutable chain of cryptographic hashes securing the network.
+            </p>
+          </div>
+          <div className="flex gap-3">
+            <Link href="/audit" className="px-5 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-sm transition-colors backdrop-blur-md inline-flex items-center gap-2 text-neutral-300 hover:text-white">
+              <svg className="w-4 h-4 translate-y-[1px]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+              </svg>
+              Standard Logs
+            </Link>
+          </div>
+        </div>
+
+        {logs.length === 0 ? (
+          <div className="text-center py-24 bg-black/40 backdrop-blur-xl border border-white/10 rounded-2xl">
+            <div className="text-neutral-500 mb-2 font-mono text-sm">NO_DATA_FOUND</div>
+            <p className="text-neutral-400">The cryptographic network is currently empty.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 relative">
+            
+            {sortedLogs.map((log, index) => {
+              const isGenesis = log.previous_hash === '0';
+              const isLatest = index === sortedLogs.length - 1;
+              const dateObj = new Date(log.timestamp);
+              const isValidDate = !isNaN(dateObj.getTime());
+              const formattedDate = isValidDate ? dateObj.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric' }) : 'UNKNOWN';
+              const formattedTime = isValidDate ? dateObj.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' }) : 'TIME';
+              
+              // Delay animation based on index
+              const animationDelay = `${index * 0.15}s`;
+
+              return (
+                <div 
+                  key={index}
+                  className="group relative bg-[#0a0a0a]/80 backdrop-blur-xl border border-white/10 rounded-2xl p-6 hover:border-cyan-500/50 transition-all duration-500 animate-in fade-in slide-in-from-bottom-8 fill-mode-both hover:-translate-y-1 hover:shadow-[0_10px_40px_-10px_rgba(34,211,238,0.15)] flex flex-col justify-between"
+                  style={{ animationDelay, animationDuration: '0.7s' }}
+                >
+                  {/* Decorative corner accents */}
+                  <div className="absolute top-0 left-0 w-8 h-8 border-t border-l border-white/20 rounded-tl-2xl opacity-0 group-hover:opacity-100 group-hover:border-cyan-400 transition-all duration-500"></div>
+                  <div className="absolute bottom-0 right-0 w-8 h-8 border-b border-r border-white/20 rounded-br-2xl opacity-0 group-hover:opacity-100 group-hover:border-cyan-400 transition-all duration-500"></div>
+
+                  {/* Header / Meta */}
+                  <div className="flex justify-between items-start mb-6">
+                    <div className="flex items-center gap-3">
+                      <div className={`px-2.5 py-1 rounded font-mono text-[10px] uppercase font-bold tracking-widest ${isGenesis ? 'text-amber-400 bg-amber-400/10 border border-amber-400/20' : 'text-neutral-300 bg-white/5 border border-white/10'}`}>
+                         {isGenesis ? 'GENESIS ROOT' : `BLOCK ${index}`}
+                      </div>
+                      {isLatest && (
+                        <div className="px-2.5 py-1 rounded font-mono text-[10px] uppercase font-bold tracking-widest text-cyan-400 bg-cyan-400/10 border border-cyan-400/20 flex items-center gap-1.5 animate-pulse">
+                          <span className="w-1.5 h-1.5 rounded-full bg-cyan-400"></span>
+                          HEAD
+                        </div>
+                      )}
+                    </div>
+                    {/* Action Type */}
+                    <div className="text-right">
+                       <span className="text-[10px] text-neutral-500 font-mono block mb-1">ACTION_TYPE</span>
+                       <span className="text-xs text-white font-medium tracking-wide bg-white/5 px-2 py-1 rounded border border-white/5">{log.action || 'UNKNOWN'}</span>
+                    </div>
+                  </div>
+
+                  {/* Hashes Container */}
+                  <div className="space-y-4 flex-grow flex flex-col justify-center my-4">
+                    {/* Previous Hash */}
+                    <div className="relative">
+                      <div className="text-[9px] uppercase tracking-[0.2em] text-neutral-500 mb-2 pl-4 border-l border-white/10">PREV_HASH</div>
+                      <div className="font-mono text-xs text-neutral-400 break-all pl-4 border-l border-white/10 group-hover:border-white/30 transition-colors">
+                        {log.previous_hash}
+                      </div>
+                    </div>
+
+                    {/* Visual separator */}
+                    <div className="pl-4 flex flex-col items-start gap-1">
+                       <div className="w-0.5 h-1 bg-white/10"></div>
+                       <div className="w-0.5 h-1 bg-white/10"></div>
+                       <div className="w-0.5 h-1 bg-white/10 group-hover:bg-cyan-500/50 transition-colors"></div>
+                    </div>
+
+                    {/* Current Hash */}
+                    <div className="relative">
+                      <div className="text-[9px] uppercase tracking-[0.2em] text-cyan-500/70 mb-2 pl-4 border-l-2 border-cyan-500/30 group-hover:border-cyan-400 transition-colors">CURR_HASH</div>
+                      <div className="font-mono text-xs md:text-sm text-white break-all pl-4 border-l-2 border-cyan-500/30 group-hover:border-cyan-400 group-hover:text-cyan-50 shadow-[0_0_30px_rgba(34,211,238,0)] group-hover:shadow-[0_0_30px_rgba(34,211,238,0.1)] transition-all duration-300">
+                        {log.current_hash}
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Footer / Timestamp */}
+                  <div className="pt-5 border-t border-white/5 mt-2 flex justify-between items-center text-[10px] font-mono text-neutral-500">
+                     <span>SYS_TIME // {formattedDate} {formattedTime}</span>
+                     <span>USER_ID // {log.user_id || 'SYS'}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+       {/* Mobile warning message since grids are complex on very small screens, though it is responsive */}
+       <div className="sm:hidden flex items-center justify-center min-h-screen p-6 text-center">
+          <div className="bg-white/5 p-6 rounded-2xl border border-white/10">
+             <svg className="w-10 h-10 text-neutral-400 mx-auto mb-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+               <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 1.5H8.25A2.25 2.25 0 006 3.75v16.5a2.25 2.25 0 002.25 2.25h7.5A2.25 2.25 0 0018 20.25V3.75a2.25 2.25 0 00-2.25-2.25H13.5m-3 0V3h3V1.5m-3 0h3m-3 18.75h3" />
+             </svg>
+             <h2 className="text-white font-semibold mb-2">Desktop Recommended</h2>
+             <p className="text-sm text-neutral-400">The Data Matrix visualization requires a larger viewport for the optimal experience.</p>
+             <Link href="/audit" className="mt-6 inline-block px-4 py-2 bg-white text-black text-sm font-semibold rounded-lg">Return to Basic Logs</Link>
+          </div>
+       </div>
+
+    </div>
+  );
+}
+
+
+================================================================================
+FILE: frontend/app/update/page.tsx
+================================================================================
+
+"use client";
+
+import React, { useState, useEffect, useRef } from "react";
+import gsap from "gsap";
+import { fetchApi } from "../lib/api";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+
+export default function UpdateProfile() {
+  const router = useRouter();
+
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
+  
+  const [errorMsg, setErrorMsg] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
+  const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState(false);
+  
+  const buttonRef = useRef(null);
+  const cancelBtnRef = useRef(null);
+  
+  const createHoverAnimation = (ref: React.RefObject<any>) => ({
+    onMouseEnter: () => gsap.to(ref.current, { scale: 1.05, duration: 0.2, ease: "power2.out" }),
+    onMouseLeave: () => gsap.to(ref.current, { scale: 1, duration: 0.2, ease: "power2.out" })
+  });
+
+  useEffect(() => {
+    // Fetch current user details to pre-fill the form
+    const fetchProfile = async () => {
+      try {
+        const data = await fetchApi('/profile', { method: 'GET' });
+        const user = data.user;
+        setUsername(user.username || "");
+        setEmail(user.email || "");
+        
+        // Format date to YYYY-MM-DD for the HTML date input if exists
+        if (user.date_of_birth) {
+            const dateObj = new Date(user.date_of_birth);
+            const formattedDate = dateObj.toISOString().split('T')[0];
+            setDateOfBirth(formattedDate);
+        }
+
+      } catch (err: any) {
+        // If unauthorized or error, redirect to login
+        router.push('/login');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, [router]);
+
+  const handleUpdate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg("");
+    setSuccessMsg("");
+    setUpdating(true);
+
+    try {
+      await fetchApi('/update', {
+        method: 'POST',
+        body: JSON.stringify({ 
+          username, 
+          email, 
+          date_of_birth: dateOfBirth 
+        })
+      });
+
+      setSuccessMsg("Profile updated successfully!");
+      
+      // Redirect back to profile after a short delay
+      setTimeout(() => {
+        router.push('/profile');
+      }, 1500);
+
+    } catch (err: any) {
+      setErrorMsg(err.message || "Failed to update profile. Please try again.");
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen w-full bg-[#0a0a0a] flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-white/20 border-t-white rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative min-h-screen w-full bg-[#0a0a0a] flex items-center justify-center overflow-hidden selection:bg-white/20 py-12">
+
+     <div className="absolute inset-0 pointer-events-none overflow-hidden">
+      <div className="absolute top-[48%] left-[30%] -translate-x-1/2 -translate-y-1/2
+        w-[600px] h-[600px] rounded-full
+        bg-[radial-gradient(circle,_rgba(176,58,46,0.70)_0%,_rgba(176,58,46,0.40)_35%,_rgba(176,58,46,0.12)_60%,_transparent_75%)]
+        blur-[140px]" />
+
+      <div className="absolute top-[70%] left-[72%] -translate-x-1/2 -translate-y-1/2
+          w-[600px] h-[600px] rounded-full
+          bg-[radial-gradient(circle,_rgba(255,255,255,0.35)_0%,_rgba(255,255,255,0.18)_35%,_rgba(255,255,255,0.08)_55%,_transparent_70%)]
+          blur-[150px]" />
+    </div>
+
+      {/* Update Card */}
+      <main className="relative z-10 w-full max-w-md px-6">
+         <div className="bg-white/[0.03] backdrop-blur-2xl border border-white/10 rounded-[32px] p-8 md:p-12 shadow-2xl opacity-0 animate-[fadeUp_0.6s_ease-out_0.1s_forwards]">
+          <header className="text-center mb-8">
+            <h1 className="text-4xl font-light text-white tracking-tight mb-2">
+              Edit Profile
+            </h1>
+            <p className="text-neutral-400 text-sm">
+              Update your personal information.
+            </p>
+          </header>
+
+          <form className="space-y-5" onSubmit={handleUpdate}>
+            
+            {errorMsg && (
+              <div className="p-3 bg-red-500/20 border border-red-500/50 rounded-xl text-red-400 text-sm text-center transition-all animate-pulse">
+                {errorMsg}
+              </div>
+            )}
+            
+            {successMsg && (
+              <div className="p-3 bg-green-500/20 border border-green-500/50 rounded-xl text-green-400 text-sm text-center transition-all">
+                {successMsg}
+              </div>
+            )}
+
+            {/* Username */}
+            <div className="space-y-2">
+              <label htmlFor="username" className="block text-[10px] font-semibold text-neutral-500 uppercase tracking-[0.2em] ml-1">
+                Username
+              </label>
+              <input
+                type="text"
+                id="username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Enter username"
+                required
+                className="w-full h-11 px-4 bg-white/[0.05] border border-white/10 rounded-xl text-white placeholder-neutral-600 focus:outline-none focus:border-white/30 focus:bg-white/[0.08] text-sm"
+              />
+            </div>
+
+            {/* Email */}
+            <div className="space-y-2">
+              <label htmlFor="email" className="block text-[10px] font-semibold text-neutral-500 uppercase tracking-[0.2em] ml-1">
+                Email
+              </label>
+              <input
+                type="email"
+                id="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="john@example.com"
+                required
+                className="w-full h-11 px-4 bg-white/[0.05] border border-white/10 rounded-xl text-white placeholder-neutral-600 focus:outline-none focus:border-white/30 focus:bg-white/[0.08] text-sm"
+              />
+            </div>
+
+            {/* Date of Birth */}
+            <div className="space-y-2">
+              <label htmlFor="dob" className="block text-[10px] font-semibold text-neutral-500 uppercase tracking-[0.2em] ml-1">
+                Date of Birth
+              </label>
+              <input
+                type="date"
+                id="dob"
+                value={dateOfBirth}
+                onChange={(e) => setDateOfBirth(e.target.value)}
+                required
+                className="w-full h-11 px-4 bg-white/[0.05] border border-white/10 rounded-xl text-white placeholder-neutral-600 focus:outline-none focus:border-white/30 focus:bg-white/[0.08] text-sm [color-scheme:dark]"
+              />
+            </div>
+
+            <div className="pt-4 space-y-3">
+                <button
+                ref={buttonRef}
+                {...createHoverAnimation(buttonRef)}
+                type="submit"
+                disabled={updating || !!successMsg}
+                className="w-full h-12 bg-white text-black font-semibold rounded-xl transition-colors hover:bg-neutral-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                {updating ? "Updating..." : "Save Changes"}
+                </button>
+
+                <Link 
+                    href="/profile"
+                    ref={cancelBtnRef}
+                    {...createHoverAnimation(cancelBtnRef)}
+                    className="flex w-full h-12 items-center justify-center bg-transparent border border-white/10 text-neutral-400 font-semibold rounded-xl transition-colors hover:bg-white/[0.05] hover:text-white"
+                >
+                    Cancel
+                </Link>
+            </div>
+
+          </form>
+        </div>
+      </main>
+
+    </div>
+  );
+}
+
+
+================================================================================
+FILE: frontend/app/signup/page.tsx
+================================================================================
+
+"use client";
+
+import React, { useState, useRef } from "react";
+import gsap from "gsap";
+import { fetchApi } from "../lib/api";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+
+export default function Signup() {
+  const router = useRouter();
+
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [dateOfBirth, setDateOfBirth] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  
+  const [errorMsg, setErrorMsg] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
+  const [loading, setLoading] = useState(false);
+  
+  const buttonRef = useRef(null);
+  
+  const handleMouseEnter = () => {
+    gsap.to(buttonRef.current, {
+      scale: 1.05,
+      duration: 0.2,
+      ease: "power2.out",
+    });
+  };
+
+  const handleMouseLeave = () => {
+    gsap.to(buttonRef.current, {
+      scale: 1,
+      duration: 0.2,
+      ease: "power2.out",
+    });
+  };
+
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg("");
+    setSuccessMsg("");
+
+    if (password !== confirmPassword) {
+      setErrorMsg("Passwords do not match");
+      return;
+    }
+
+    setLoading(true);
+
+    try {
+      // The proxy rewrites this to http://localhost:3000/signup
+      await fetchApi('/signup', {
+        method: 'POST',
+        body: JSON.stringify({ 
+          username, 
+          email, 
+          password, 
+          date_of_birth: dateOfBirth 
+        })
+      });
+
+      setSuccessMsg("Account created successfully! Redirecting to login...");
+      
+      // Redirect to login page after a short delay
+      setTimeout(() => {
+        router.push('/login');
+      }, 2000);
+
+    } catch (err: any) {
+      setErrorMsg(err.message || "Failed to create account. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
+  return (
+    <div className="relative min-h-screen w-full bg-[#0a0a0a] flex items-center justify-center overflow-hidden selection:bg-white/20 py-12">
+
+     <div className="absolute inset-0 pointer-events-none overflow-hidden">
+      <div className="absolute top-[48%] left-[30%] -translate-x-1/2 -translate-y-1/2
+        w-[600px] h-[600px] rounded-full
+        bg-[radial-gradient(circle,_rgba(176,58,46,0.70)_0%,_rgba(176,58,46,0.40)_35%,_rgba(176,58,46,0.12)_60%,_transparent_75%)]
+        blur-[140px]" />
+
+  <div className="absolute top-[70%] left-[72%] -translate-x-1/2 -translate-y-1/2
+          w-[600px] h-[600px] rounded-full
+          bg-[radial-gradient(circle,_rgba(255,255,255,0.35)_0%,_rgba(255,255,255,0.18)_35%,_rgba(255,255,255,0.08)_55%,_transparent_70%)]
+          blur-[150px]" />
+    </div>
+
+      {/* Signup Card */}
+      <main className="relative z-10 w-full max-w-md px-6">
+         <div className="bg-white/[0.03] backdrop-blur-2xl border border-white/10 rounded-[32px] p-8 md:p-12 shadow-2xl opacity-0 animate-[fadeUp_0.6s_ease-out_0.1s_forwards]">
+          <header className="text-center mb-8">
+            <h1 className="text-4xl font-light text-white tracking-tight mb-2">
+              Create Account
+            </h1>
+            <p className="text-neutral-400 text-sm">
+              Enter your details to register for AuditChain.
+            </p>
+          </header>
+
+          <form className="space-y-5" onSubmit={handleSignup}>
+            
+            {errorMsg && (
+              <div className="p-3 bg-red-500/20 border border-red-500/50 rounded-xl text-red-400 text-sm text-center transition-all animate-pulse">
+                {errorMsg}
+              </div>
+            )}
+            
+            {successMsg && (
+              <div className="p-3 bg-green-500/20 border border-green-500/50 rounded-xl text-green-400 text-sm text-center transition-all">
+                {successMsg}
+              </div>
+            )}
+
+            {/* Username */}
+            <div className="space-y-2">
+              <label htmlFor="username" className="block text-[10px] font-semibold text-neutral-500 uppercase tracking-[0.2em] ml-1">
+                Username
+              </label>
+              <input
+                type="text"
+                id="username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="Enter username"
+                required
+                className="w-full h-11 px-4 bg-white/[0.05] border border-white/10 rounded-xl text-white placeholder-neutral-600 focus:outline-none focus:border-white/30 focus:bg-white/[0.08] text-sm"
+              />
+            </div>
+
+            {/* Email */}
+            <div className="space-y-2">
+              <label htmlFor="email" className="block text-[10px] font-semibold text-neutral-500 uppercase tracking-[0.2em] ml-1">
+                Email
+              </label>
+              <input
+                type="email"
+                id="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="john@example.com"
+                required
+                className="w-full h-11 px-4 bg-white/[0.05] border border-white/10 rounded-xl text-white placeholder-neutral-600 focus:outline-none focus:border-white/30 focus:bg-white/[0.08] text-sm"
+              />
+            </div>
+
+            {/* Date of Birth */}
+            <div className="space-y-2">
+              <label htmlFor="dob" className="block text-[10px] font-semibold text-neutral-500 uppercase tracking-[0.2em] ml-1">
+                Date of Birth
+              </label>
+              <input
+                type="date"
+                id="dob"
+                value={dateOfBirth}
+                onChange={(e) => setDateOfBirth(e.target.value)}
+                required
+                className="w-full h-11 px-4 bg-white/[0.05] border border-white/10 rounded-xl text-white placeholder-neutral-600 focus:outline-none focus:border-white/30 focus:bg-white/[0.08] text-sm [color-scheme:dark]"
+              />
+            </div>
+
+            {/* Password */}
+            <div className="space-y-2">
+              <label htmlFor="password" className="block text-[10px] font-semibold text-neutral-500 uppercase tracking-[0.2em] ml-1">
+                Password
+              </label>
+              <input
+                type="password"
+                id="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Create password"
+                required
+                className="w-full h-11 px-4 bg-white/[0.05] border border-white/10 rounded-xl text-white placeholder-neutral-600 focus:outline-none focus:border-white/30 focus:bg-white/[0.08] text-sm"
+              />
+            </div>
+
+            {/* Confirm Password */}
+            <div className="space-y-2">
+              <label htmlFor="confirmPassword" className="block text-[10px] font-semibold text-neutral-500 uppercase tracking-[0.2em] ml-1">
+                Confirm Password
+              </label>
+              <input
+                type="password"
+                id="confirmPassword"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Confirm password"
+                required
+                className="w-full h-11 px-4 bg-white/[0.05] border border-white/10 rounded-xl text-white placeholder-neutral-600 focus:outline-none focus:border-white/30 focus:bg-white/[0.08] text-sm"
+              />
+            </div>
+
+            {/* Submit */}
+            <button
+              ref={buttonRef}
+              onMouseEnter={handleMouseEnter}
+              onMouseLeave={handleMouseLeave}
+              type="submit"
+              disabled={loading || !!successMsg}
+              className="w-full h-12 mt-4 bg-white text-black font-semibold rounded-xl transition-colors hover:bg-neutral-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? "Creating Account..." : "Sign Up"}
+            </button>
+
+          </form>
+
+          <footer className="mt-8 text-center text-sm text-neutral-500">
+            Already have an account?{" "}
+            <Link href="/login" className="text-neutral-300 hover:text-white font-medium underline underline-offset-4">
+              Log in
+            </Link>
+          </footer>
+
+        </div>
+      </main>
+
+    </div>
+  );
+}
+
+
+================================================================================
+FILE: frontend/app/audit/page.tsx
+================================================================================
+
+"use client";
+
+import React, { useState, useEffect } from "react";
+import { fetchApi } from "../lib/api";
+import Link from "next/link";
+import { UAParser } from "ua-parser-js";
+
+interface AuditLog {
+  id: number;
+  user_id: number;
+  action: string;
+  attribute_name: string;
+  ip_address: string;
+  user_agent: string;
+  previous_hash: string;
+  current_hash: string;
+  createdAt: string;
+}
+
+interface AggregatedAuditLog extends Omit<AuditLog, 'attribute_name' | 'id'> {
+  id: string;
+  attributes: string[];
+  count: number;
+}
+
+export default function AuditLogs() {
+  const [logs, setLogs] = useState<AggregatedAuditLog[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState("");
+
+  useEffect(() => {
+    const fetchLogs = async () => {
+      try {
+        const data = await fetchApi('/audit');
+        const rawLogs: AuditLog[] = data.logs || [];
+
+        // Aggregate Logs
+        const aggregated: AggregatedAuditLog[] = [];
+
+        rawLogs.forEach(log => {
+          if (aggregated.length === 0) {
+            aggregated.push({
+              ...log,
+              id: log.id.toString(),
+              attributes: log.attribute_name ? [log.attribute_name] : [],
+              count: 1
+            });
+            return;
+          }
+
+          const lastGroup = aggregated[aggregated.length - 1];
+          const timeDiff = Math.abs(new Date(lastGroup.createdAt).getTime() - new Date(log.createdAt).getTime());
+          const isSameAction = lastGroup.action === log.action;
+          const isSameUser = lastGroup.user_id === log.user_id;
+          const isWithin15Mins = timeDiff <= 15 * 60 * 1000;
+
+          if (isSameAction && isSameUser && isWithin15Mins) {
+            lastGroup.count += 1;
+            if (log.attribute_name && !lastGroup.attributes.includes(log.attribute_name)) {
+              lastGroup.attributes.push(log.attribute_name);
+            }
+          } else {
+            aggregated.push({
+              ...log,
+              id: log.id.toString(),
+              attributes: log.attribute_name ? [log.attribute_name] : [],
+              count: 1
+            });
+          }
+        });
+
+        setLogs(aggregated);
+      } catch (err: unknown) {
+        console.error("Failed to load audit logs", err);
+        setErrorMsg("Failed to load audit logs. Are you sure the backend SDK is logging?");
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchLogs();
+  }, []);
+
+  // 🔥 Real-time Update Listener
+  useEffect(() => {
+    const eventSource = new EventSource('/api/dev/events');
+
+    eventSource.onmessage = (event) => {
+      if (event.data === 'update') {
+        const fetchLogs = async () => {
+          try {
+            const data = await fetchApi('/audit');
+            const rawLogs: AuditLog[] = data.logs || [];
+
+            const aggregated: AggregatedAuditLog[] = [];
+            rawLogs.forEach(log => {
+              if (aggregated.length === 0) {
+                aggregated.push({ ...log, id: log.id.toString(), attributes: log.attribute_name ? [log.attribute_name] : [], count: 1 });
+                return;
+              }
+              const lastGroup = aggregated[aggregated.length - 1];
+              const timeDiff = Math.abs(new Date(lastGroup.createdAt).getTime() - new Date(log.createdAt).getTime());
+              const isSameAction = lastGroup.action === log.action;
+              const isSameUser = lastGroup.user_id === log.user_id;
+              const isWithin15Mins = timeDiff <= 15 * 60 * 1000;
+              if (isSameAction && isSameUser && isWithin15Mins) {
+                lastGroup.count += 1;
+                if (log.attribute_name && !lastGroup.attributes.includes(log.attribute_name)) lastGroup.attributes.push(log.attribute_name);
+              } else {
+                aggregated.push({ ...log, id: log.id.toString(), attributes: log.attribute_name ? [log.attribute_name] : [], count: 1 });
+              }
+            });
+            setLogs(aggregated);
+          } catch (err) {
+            console.error("Failed to sync audit logs", err);
+          }
+        };
+        fetchLogs();
+      }
+    };
+
+    return () => eventSource.close();
+  }, []);
+
+  const getActionColor = (action: string) => {
+    if (action?.includes('Registered')) return 'text-emerald-400 bg-emerald-400/10 border-emerald-400/20';
+    if (action?.includes('Updated')) return 'text-blue-400 bg-blue-400/10 border-blue-400/20';
+    if (action?.includes('Deleted')) return 'text-red-400 bg-red-400/10 border-red-400/20';
+    if (action?.includes('In')) return 'text-purple-400 bg-purple-400/10 border-purple-400/20';
+    if (action?.includes('Out')) return 'text-neutral-400 bg-neutral-400/10 border-neutral-400/20';
+    if (action?.includes('Reset')) return 'text-amber-400 bg-amber-400/10 border-amber-400/20';
+    return 'text-neutral-300 bg-white/5 border-white/10';
+  };
+
+  const parseDevice = (userAgentStr: string) => {
+    if (!userAgentStr) return "Unknown Device";
+    try {
+      const parser = new UAParser(userAgentStr);
+      const browser = parser.getBrowser().name;
+      const os = parser.getOS().name;
+
+      if (browser && os) return `${browser} on ${os}`;
+      if (browser) return browser;
+      if (os) return os;
+      return "Unknown Device";
+    } catch {
+      return "Unknown Device";
+    }
+  };
+
+  return (
+    <div className="relative min-h-screen w-full bg-[#0a0a0a] text-white selection:bg-white/20">
+
+      {/* Background Orbs */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden z-0">
+        <div className="absolute top-[20%] left-[10%] -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-[radial-gradient(circle,_rgba(176,58,46,0.20)_0%,_transparent_70%)] blur-[100px]" />
+        <div className="absolute top-[80%] left-[80%] -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] rounded-full bg-[radial-gradient(circle,_rgba(37,99,235,0.10)_0%,_transparent_70%)] blur-[120px]" />
+      </div>
+
+      <div className="relative z-10 container mx-auto px-4 md:px-8 py-12 max-w-[1400px]">
+
+        {/* Header */}
+        <header className="mb-10 flex flex-col md:flex-row md:items-end justify-between border-b border-white/10 pb-6 gap-4 animate-[fadeUp_0.4s_ease-out]">
+          <div>
+            <h1 className="text-4xl font-light tracking-tight mb-2 flex items-center gap-3">
+              <svg className="w-8 h-8 text-neutral-400" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Audit Logs
+            </h1>
+            <p className="text-neutral-400 text-sm">Immutable ledger of system events and entity modifications.</p>
+          </div>
+          <div>
+            <div className="flex gap-3">
+              <Link href="/hashes" className="px-5 py-2.5 bg-white text-black font-semibold rounded-lg text-sm hover:bg-neutral-200 transition-colors inline-flex items-center gap-2 shadow-[0_0_15px_rgba(255,255,255,0.1)]">
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" />
+                </svg>
+                View Cryptographic Hashes
+              </Link>
+              <Link href="/profile" className="px-5 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-sm transition-colors backdrop-blur-md inline-flex items-center gap-2 text-neutral-300 hover:text-white">
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+                </svg>
+                Back to Profile
+              </Link>
+            </div>
+          </div>
+        </header>
+
+        {/* Content */}
+        <main className="animate-[fadeUp_0.6s_ease-out_0.1s_forwards] opacity-0">
+          <div className="bg-[#0f0f0f]/80 backdrop-blur-2xl border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
+
+            {loading ? (
+              <div className="p-32 flex flex-col items-center justify-center text-neutral-500">
+                <div className="w-10 h-10 border-2 border-white/10 border-t-blue-500 rounded-full animate-spin mb-6 shadow-[0_0_15px_rgba(37,99,235,0.5)]"></div>
+                <p className="tracking-widest uppercase text-xs font-semibold">Decrypting Ledger...</p>
+              </div>
+            ) : errorMsg ? (
+              <div className="p-12 text-center text-red-400 bg-red-500/5">
+                <p className="font-mono">{errorMsg}</p>
+              </div>
+            ) : logs.length === 0 ? (
+              <div className="p-32 text-center text-neutral-500">
+                <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mx-auto mb-6">
+                  <svg className="w-8 h-8 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M5 8h14M5 8a2 2 0 110-4h14a2 2 0 110 4M5 8v10a2 2 0 002 2h10a2 2 0 002-2V8m-9 4h4" />
+                  </svg>
+                </div>
+                <p className="text-lg text-neutral-300 mb-2">Immutable Ledger is Empty</p>
+                <p className="text-sm">No actions have been recorded on the chain yet.</p>
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-sm whitespace-nowrap">
+                  <thead className="bg-[#151515] border-b border-white/10 text-[10px] uppercase tracking-[0.2em] text-neutral-500 font-semibold sticky top-0 z-10">
+                    <tr>
+                      <th className="px-6 py-5 rounded-tl-2xl">Date & Time</th>
+                      <th className="px-6 py-5">Action</th>
+                      <th className="px-6 py-5">Origin User ID</th>
+                      <th className="px-6 py-5">Attribute(s) Modified</th>
+                      <th className="px-6 py-5 rounded-tr-2xl">Device OS & Browser</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-white/[0.05]">
+                    {logs.map((log) => {
+                      const dateObj = new Date(log.createdAt);
+                      const formattedDate = dateObj.toLocaleDateString();
+                      const formattedTime = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+                      return (
+                        <tr key={log.id} className="hover:bg-white/[0.03] transition-colors group">
+
+                          {/* Chronology */}
+                          <td className="px-6 py-4">
+                            <div className="flex flex-col">
+                              <span className="text-neutral-200 font-medium">{formattedDate}</span>
+                              <span className="text-neutral-500 text-xs font-mono">{formattedTime}</span>
+                            </div>
+                          </td>
+
+                          {/* Classification */}
+                          <td className="px-6 py-4">
+                            <span className={`px-2.5 py-1.5 rounded-md text-[10px] font-bold tracking-widest border uppercase shadow-sm ${getActionColor(log.action)}`}>
+                              {log.action || 'UNKNOWN'}
+                              {log.count > 1 && (
+                                <span className="ml-2 font-mono text-[9px] bg-black/20 px-1.5 py-0.5 rounded-sm">x{log.count}</span>
+                              )}
+                            </span>
+                          </td>
+
+                          {/* Identity */}
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-full bg-neutral-800 border border-white/10 flex items-center justify-center text-xs text-neutral-400 group-hover:border-white/20 transition-colors">
+                                {log.user_id ? log.user_id : "?"}
+                              </div>
+                              <span className="text-neutral-300 font-medium tracking-wide">
+                                ID: {log.user_id || 'System'}
+                              </span>
+                            </div>
+                          </td>
+
+                          {/* Context */}
+                          <td className="px-6 py-4">
+                            <div className="flex flex-wrap gap-1">
+                              {log.attributes.length > 0 ? (
+                                log.attributes.map((attr, idx) => (
+                                  <span key={idx} className="inline-flex items-center gap-2 bg-white/5 px-2 py-1 rounded-md border border-white/5 font-mono text-xs text-neutral-300">
+                                    {attr}
+                                  </span>
+                                ))
+                              ) : (
+                                <span className="inline-flex items-center gap-2 bg-white/5 px-2 py-1 rounded-md border border-white/5 font-mono text-xs text-neutral-300">
+                                  N/A
+                                </span>
+                              )}
+                            </div>
+                          </td>
+
+                          {/* Fingerprint */}
+                          <td className="px-6 py-4">
+                            <div className="flex flex-col">
+                              <span className="text-neutral-300 capitalize">{parseDevice(log.user_agent)}</span>
+                              <span className="text-neutral-500 text-[10px] font-mono tracking-wider mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                IP: {log.ip_address || 'Hidden'}
+                              </span>
+                            </div>
+                          </td>
+
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+
+            {logs.length > 0 && (
+              <div className="bg-[#121212] border-t border-white/10 p-5 flex flex-col md:flex-row justify-between items-center text-xs text-neutral-500 font-mono text-[10px] uppercase tracking-[0.1em]">
+                <span>Log Height: {logs.length} Actions</span>
+                <span className="flex items-center gap-2 mt-2 md:mt-0 px-3 py-1 bg-white/5 border border-white/10 text-neutral-400 rounded-full">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                  </span>
+                  Live Sync Active
+                </span>
+              </div>
+            )}
+
+          </div>
+        </main>
+      </div>
+    </div>
+  );
+}
+
+
+================================================================================
+FILE: frontend/app/profile/page.tsx
+================================================================================
+
+"use client";
+
+import React, { useState, useEffect, useRef } from "react";
+import gsap from "gsap";
+import { fetchApi } from "../lib/api";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+
+export default function Profile() {
+  const router = useRouter();
+
+  const [user, setUser] = useState<any>(null);
+  const [errorMsg, setErrorMsg] = useState("");
+  const [loading, setLoading] = useState(true);
+  
+  const logoutBtnRef = useRef(null);
+  const updateBtnRef = useRef(null);
+  const settingsBtnRef = useRef(null);
+  
+  const createHoverAnimation = (ref: React.RefObject<any>) => ({
+    onMouseEnter: () => gsap.to(ref.current, { scale: 1.05, duration: 0.2, ease: "power2.out" }),
+    onMouseLeave: () => gsap.to(ref.current, { scale: 1, duration: 0.2, ease: "power2.out" })
+  });
+
+  useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const data = await fetchApi('/profile', { method: 'GET' });
+        setUser(data.user);
+      } catch (err: any) {
+        // If unauthorized or error, redirect to login
+        router.push('/login');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchProfile();
+  }, [router]);
+
+  const handleLogout = async () => {
+    try {
+      await fetchApi('/logout', { method: 'POST' });
+      router.push('/login');
+    } catch (err: any) {
+      setErrorMsg("Failed to logout.");
+    }
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen w-full bg-[#0a0a0a] flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-white/20 border-t-white rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative min-h-screen w-full bg-[#0a0a0a] flex items-center justify-center overflow-hidden selection:bg-white/20 py-12">
+
+     <div className="absolute inset-0 pointer-events-none overflow-hidden">
+      <div className="absolute top-[48%] left-[30%] -translate-x-1/2 -translate-y-1/2
+        w-[600px] h-[600px] rounded-full
+        bg-[radial-gradient(circle,_rgba(176,58,46,0.70)_0%,_rgba(176,58,46,0.40)_35%,_rgba(176,58,46,0.12)_60%,_transparent_75%)]
+        blur-[140px]" />
+
+      <div className="absolute top-[70%] left-[72%] -translate-x-1/2 -translate-y-1/2
+          w-[600px] h-[600px] rounded-full
+          bg-[radial-gradient(circle,_rgba(255,255,255,0.35)_0%,_rgba(255,255,255,0.18)_35%,_rgba(255,255,255,0.08)_55%,_transparent_70%)]
+          blur-[150px]" />
+    </div>
+
+      {/* Profile Card */}
+      <main className="relative z-10 w-full max-w-lg px-6">
+         <div className="bg-white/[0.03] backdrop-blur-2xl border border-white/10 rounded-[32px] p-8 md:p-12 shadow-2xl opacity-0 animate-[fadeUp_0.6s_ease-out_0.1s_forwards]">
+          <header className="text-center mb-10 border-b border-white/10 pb-8">
+            <div className="w-24 h-24 mx-auto bg-gradient-to-tr from-neutral-800 to-neutral-600 rounded-full mb-6 flex items-center justify-center text-3xl font-light text-white shadow-inner">
+              {user?.username?.charAt(0).toUpperCase() || "U"}
+            </div>
+            <h1 className="text-3xl font-light text-white tracking-tight mb-2">
+              Welcome, {user?.username}
+            </h1>
+            <p className="text-neutral-400 text-sm">
+              Manage your personal information and account security.
+            </p>
+          </header>
+
+          <div className="space-y-6">
+            {errorMsg && (
+              <div className="p-3 bg-red-500/20 border border-red-500/50 rounded-xl text-red-400 text-sm xl:text-center transition-all">
+                {errorMsg}
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+              {/* Info Items */}
+              <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-4">
+                <span className="block text-[10px] font-semibold text-neutral-500 uppercase tracking-[0.2em] mb-1">Username</span>
+                <span className="text-white text-sm">{user?.username}</span>
+              </div>
+              
+              <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-4">
+                <span className="block text-[10px] font-semibold text-neutral-500 uppercase tracking-[0.2em] mb-1">Email</span>
+                <span className="text-white text-sm">{user?.email}</span>
+              </div>
+
+              <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-4">
+                <span className="block text-[10px] font-semibold text-neutral-500 uppercase tracking-[0.2em] mb-1">Date of Birth</span>
+                <span className="text-white text-sm">{user?.date_of_birth ? new Date(user.date_of_birth).toLocaleDateString() : 'N/A'}</span>
+              </div>
+
+              <div className="bg-white/[0.02] border border-white/5 rounded-2xl p-4">
+                <span className="block text-[10px] font-semibold text-neutral-500 uppercase tracking-[0.2em] mb-1">Age</span>
+                <span className="text-white text-sm">{user?.age || 'N/A'}</span>
+              </div>
+            </div>
+
+            <div className="pt-6 flex flex-col sm:flex-row gap-4">
+              <Link 
+                href="/update"
+                ref={updateBtnRef}
+                {...createHoverAnimation(updateBtnRef)}
+                className="flex-1 h-12 flex items-center justify-center bg-white text-black font-semibold rounded-xl transition-colors hover:bg-neutral-200"
+              >
+                Edit Profile
+              </Link>
+
+              <Link 
+                href="/settings"
+                ref={settingsBtnRef}
+                {...createHoverAnimation(settingsBtnRef)}
+                className="flex-1 h-12 flex items-center justify-center bg-white/[0.05] border border-white/10 text-white font-semibold rounded-xl transition-colors hover:bg-white/[0.1]"
+              >
+                Settings
+              </Link>
+
+              <button
+                onClick={handleLogout}
+                ref={logoutBtnRef}
+                {...createHoverAnimation(logoutBtnRef)}
+                className="flex-1 h-12 bg-white/[0.05] border border-white/10 text-white font-semibold rounded-xl transition-colors hover:bg-white/[0.1] hover:text-red-400"
+              >
+                Log Out
+              </button>
+            </div>
+          </div>
+
+        </div>
+      </main>
+
+    </div>
+  );
+}
+
+
+================================================================================
+FILE: frontend/app/lib/api.ts
+================================================================================
+
+/**
+ * Base utility for making API requests via the Next.js proxy
+ */
+
+export const API_URL = process.env.NEXT_PUBLIC_API_URL || '/api';
+
+export const fetchApi = async (endpoint: string, options: RequestInit = {}) => {
+  const url = `${API_URL}${endpoint}`;
+  
+  const defaultOptions: RequestInit = {
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  };
+
+  const finalOptions = {
+    ...defaultOptions,
+    ...options,
+    headers: {
+      ...defaultOptions.headers,
+      ...options.headers,
+    },
+  };
+
+  try {
+    const res = await fetch(url, finalOptions);
+    
+    // Attempt to parse JSON response
+    let data;
+    const contentType = res.headers.get("content-type");
+    if (contentType && contentType.includes("application/json")) {
+      data = await res.json();
+    }
+    
+    if (!res.ok) {
+        throw new Error(data?.error || `API returned status: ${res.status}`);
+    }
+    
+    return data;
+  } catch (err) {
+    console.error(`API Error for ${url}:`, err);
+    throw err;
+  }
+};
+
+
+================================================================================
+FILE: frontend/app/api/auth/[...nextauth]/route.ts
+================================================================================
+
+
+
+================================================================================
+FILE: frontend/app/dev/signup/page.tsx
+================================================================================
+
+"use client";
+
+import React, { useState, useRef } from "react";
+import gsap from "gsap";
+import { fetchApi } from "../../lib/api";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+
+export default function DevSignup() {
+  const router = useRouter();
+
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [dob, setDob] = useState("");
+  const [password, setPassword] = useState("");
+  
+  const [errorMsg, setErrorMsg] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
+  const [loading, setLoading] = useState(false);
+  
+  const buttonRef = useRef(null);
+  
+  const handleMouseEnter = () => {
+    gsap.to(buttonRef.current, {
+      scale: 1.05,
+      duration: 0.2,
+      ease: "power2.out",
+    });
+  };
+
+  const handleMouseLeave = () => {
+    gsap.to(buttonRef.current, {
+      scale: 1,
+      duration: 0.2,
+      ease: "power2.out",
+    });
+  };
+
+  const handleSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg("");
+    setSuccessMsg("");
+    setLoading(true);
+
+    try {
+      await fetchApi('/dev/register', {
+        method: 'POST',
+        body: JSON.stringify({ username, email, dob, password })
+      });
+
+      setSuccessMsg("Account created! Redirecting to login...");
+      setTimeout(() => {
+        router.push('/dev/login');
+      }, 2000);
+
+    } catch (err: any) {
+      setErrorMsg(err.message || "Failed to create account. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="relative min-h-screen w-full bg-[#0a0a0a] flex items-center justify-center overflow-hidden selection:bg-white/20 pb-10">
+
+     <div className="absolute inset-0 pointer-events-none overflow-hidden hover:opacity-100 opacity-60 transition-opacity">
+      <div className="absolute top-[48%] left-[30%] -translate-x-1/2 -translate-y-1/2
+        w-[600px] h-[600px] rounded-full
+        bg-[radial-gradient(circle,_rgba(255,100,100,0.40)_0%,_rgba(255,50,50,0.20)_35%,_rgba(37,99,235,0.1)_60%,_transparent_75%)]
+        blur-[80px]" />
+
+      <div className="absolute top-[70%] left-[72%] -translate-x-1/2 -translate-y-1/2
+          w-[600px] h-[600px] rounded-full
+          bg-[radial-gradient(circle,_rgba(255,255,255,0.25)_0%,_rgba(255,255,255,0.1)_35%,_rgba(255,255,255,0.05)_55%,_transparent_70%)]
+          blur-[80px]" />
+    </div>
+
+      {/* Signup Card */}
+      <main className="relative z-10 w-full max-w-md px-6 mt-16">
+         <div className="bg-[#111111]/80 backdrop-blur-2xl border border-white/10 rounded-[32px] p-8 md:p-12 shadow-[0_0_50px_rgba(255,100,100,0.1)] opacity-0 animate-[fadeUp_0.6s_ease-out_0.1s_forwards]">
+          <header className="text-center mb-10">
+            <h1 className="text-4xl font-light text-white tracking-tight mb-2">
+              Operator
+            </h1>
+            <p className="text-neutral-400 text-sm">
+              Provision a new developer identity.
+            </p>
+          </header>
+
+          <form className="space-y-6" onSubmit={handleSignup}>
+            
+            {errorMsg && (
+              <div className="p-3 bg-red-500/20 border border-red-500/50 rounded-xl text-red-400 text-sm text-center">
+                {errorMsg}
+              </div>
+            )}
+            {successMsg && (
+              <div className="p-3 bg-emerald-500/20 border border-emerald-500/50 rounded-xl text-emerald-400 text-sm text-center">
+                {successMsg}
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <label
+                htmlFor="username"
+                className="block text-[10px] font-semibold text-neutral-500 uppercase tracking-[0.2em] ml-1"
+              >
+                Desired Username
+              </label>
+
+              <input
+                type="text"
+                id="username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="dev_ops_1"
+                required
+                className="w-full h-12 px-4 bg-white/[0.05] border border-white/10 rounded-xl text-white placeholder-neutral-600 focus:outline-none focus:border-white/30 focus:bg-white/[0.08]"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <label
+                htmlFor="email"
+                className="block text-[10px] font-semibold text-neutral-500 uppercase tracking-[0.2em] ml-1"
+              >
+                Work Email
+              </label>
+
+              <input
+                type="email"
+                id="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="dev@example.com"
+                required
+                className="w-full h-12 px-4 bg-white/[0.05] border border-white/10 rounded-xl text-white placeholder-neutral-600 focus:outline-none focus:border-white/30 focus:bg-white/[0.08]"
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <label
+                htmlFor="dob"
+                className="block text-[10px] font-semibold text-neutral-500 uppercase tracking-[0.2em] ml-1"
+              >
+                Date of Verification (DOB)
+              </label>
+
+              <input
+                type="date"
+                id="dob"
+                value={dob}
+                onChange={(e) => setDob(e.target.value)}
+                required
+                className="w-full h-12 px-4 bg-white/[0.05] border border-white/10 rounded-xl text-white placeholder-neutral-600 focus:outline-none focus:border-white/30 focus:bg-white/[0.08]"
+                style={{ colorScheme: "dark" }}
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label
+                htmlFor="password"
+                className="block text-[10px] font-semibold text-neutral-500 uppercase tracking-[0.2em] ml-1"
+              >
+                Secure Key
+              </label>
+
+              <input
+                type="password"
+                id="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter key sequence"
+                required
+                className="w-full h-12 px-4 bg-white/[0.05] border border-white/10 rounded-xl text-white placeholder-neutral-600 focus:outline-none focus:border-white/30 focus:bg-white/[0.08]"
+              />
+            </div>
+
+            <button
+              ref={buttonRef}
+              onMouseEnter={handleMouseEnter}
+              onMouseLeave={handleMouseLeave}
+              type="submit"
+              disabled={loading}
+              className="w-full h-12 bg-white text-black font-semibold rounded-xl transition-colors hover:bg-neutral-200 disabled:opacity-50 disabled:cursor-not-allowed mt-4 shadow-[0_0_15px_rgba(255,255,255,0.4)] hover:shadow-[0_0_25px_rgba(255,255,255,0.6)]"
+            >
+              {loading ? "Generating Identity..." : "Request Access Node"}
+            </button>
+
+          </form>
+
+          <footer className="mt-8 text-center text-sm text-neutral-500">
+            Already verified?{" "}
+            <Link href="/dev/login" className="text-neutral-300 hover:text-white font-medium underline underline-offset-4">
+              Connect Securely
+            </Link>
+          </footer>
+
+        </div>
+      </main>
+
+    </div>
+  );
+}
+
+
+================================================================================
+FILE: frontend/app/dev/admin/page.tsx
+================================================================================
+
+"use client";
+
+import React, { useState, useEffect } from "react";
+import { fetchApi } from "../../lib/api";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+
+interface DevUser {
+  id: number;
+  username: string;
+  email: string;
+  is_blocked: boolean;
+  attempts: number;
+}
+
+export default function DevAdmin() {
+  const router = useRouter();
+  const [users, setUsers] = useState<DevUser[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState("");
+
+  const [username, setUsername] = useState("");
+  const [email, setEmail] = useState("");
+  const [dob, setDob] = useState("");
+  const [password, setPassword] = useState("");
+
+  const loadData = async () => {
+    try {
+      const data = await fetchApi('/dev/admin');
+      if (data.users) setUsers(data.users);
+    } catch (err: any) {
+      if (err.message === "Unauthorized") {
+          router.push('/dev/login');
+      }
+      setErrorMsg("Failed to load developers");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await fetchApi('/dev/register', {
+        method: 'POST',
+        body: JSON.stringify({ username, email, dob, password })
+      });
+      setUsername("");
+      setEmail("");
+      setDob("");
+      setPassword("");
+      loadData();
+    } catch (e: any) {
+      alert(e.message || "Failed to register");
+    }
+  };
+
+  const handleUnblock = async (id: number) => {
+    try {
+      await fetchApi(`/dev/unblock/${id}`);
+      loadData();
+    } catch (e) {
+      alert("Failed to unblock");
+    }
+  };
+
+  const handleDelete = async (id: number) => {
+    if (!confirm("Are you sure?")) return;
+    try {
+      await fetchApi(`/dev/delete/${id}`);
+      loadData();
+    } catch (e) {
+      alert("Failed to delete");
+    }
+  };
+
+  return (
+    <div className="relative min-h-screen w-full bg-[#0a0a0a] text-white selection:bg-white/20">
+
+      {/* Orbs */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <div className="absolute top-[20%] left-[10%] -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-[radial-gradient(circle,_rgba(176,58,46,0.20)_0%,_transparent_70%)] blur-[80px]" />
+      </div>
+
+      <div className="relative z-10 container mx-auto px-4 md:px-8 py-12 max-w-[1200px]">
+
+        <header className="mb-10 flex items-center justify-between border-b border-white/10 pb-6 animate-[fadeUp_0.4s_ease-out]">
+          <div>
+            <h1 className="text-4xl font-light tracking-tight mb-2">
+              Personnel <span className="font-semibold text-red-500">Management</span>
+            </h1>
+            <p className="text-neutral-400 text-sm">Register and manage developer accesses.</p>
+          </div>
+          <Link href="/dev/dashboard" className="px-5 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-sm transition-colors flex items-center gap-2">
+             Back to Dashboard
+          </Link>
+        </header>
+
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-[fadeUp_0.6s_ease-out_0.1s_forwards] opacity-0">
+          
+          <div className="lg:col-span-1">
+            <div className="bg-[#111111]/80 backdrop-blur-2xl border border-white/10 rounded-2xl p-6 shadow-2xl">
+              <h2 className="text-xl font-semibold mb-6 pb-4 border-b border-white/10">Authorize New Operator</h2>
+              
+              <form className="space-y-4" onSubmit={handleRegister}>
+                <div>
+                  <label className="block text-[10px] font-semibold text-neutral-500 uppercase tracking-wider mb-2">Username</label>
+                  <input type="text" value={username} onChange={e => setUsername(e.target.value)} required className="w-full h-10 px-4 bg-white/5 border border-white/10 rounded-lg text-sm focus:outline-none focus:border-white/30" />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-semibold text-neutral-500 uppercase tracking-wider mb-2">Email</label>
+                  <input type="email" value={email} onChange={e => setEmail(e.target.value)} required className="w-full h-10 px-4 bg-white/5 border border-white/10 rounded-lg text-sm focus:outline-none focus:border-white/30" />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-semibold text-neutral-500 uppercase tracking-wider mb-2">DOB</label>
+                  <input type="date" value={dob} onChange={e => setDob(e.target.value)} required className="w-full h-10 px-4 bg-white/5 border border-white/10 rounded-lg text-sm focus:outline-none focus:border-white/30" style={{ colorScheme: "dark" }} />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-semibold text-neutral-500 uppercase tracking-wider mb-2">Assigned Key</label>
+                  <input type="password" value={password} onChange={e => setPassword(e.target.value)} required className="w-full h-10 px-4 bg-white/5 border border-white/10 rounded-lg text-sm focus:outline-none focus:border-white/30" />
+                </div>
+                <button type="submit" className="w-full h-10 mt-4 bg-white text-black font-semibold rounded-lg hover:bg-neutral-200 transition-colors">
+                  Provision Access
+                </button>
+              </form>
+            </div>
+          </div>
+
+          <div className="lg:col-span-2">
+            <div className="bg-[#111111]/80 backdrop-blur-2xl border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
+              <div className="p-6 border-b border-white/10">
+                <h2 className="text-xl font-semibold">Active Operators</h2>
+              </div>
+              
+              {loading ? (
+                 <div className="p-12 text-center text-neutral-500">Loading registry...</div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm whitespace-nowrap">
+                    <thead className="bg-[#151515] border-b border-white/10 text-[10px] uppercase tracking-[0.2em] text-neutral-500">
+                      <tr>
+                        <th className="px-6 py-4">ID</th>
+                        <th className="px-6 py-4">Username</th>
+                        <th className="px-6 py-4">Status</th>
+                        <th className="px-6 py-4 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                      {users.map(u => (
+                        <tr key={u.id} className="hover:bg-white/[0.02]">
+                          <td className="px-6 py-4 font-mono text-neutral-400">#{u.id}</td>
+                          <td className="px-6 py-4 font-medium">{u.username}</td>
+                          <td className="px-6 py-4">
+                            {u.is_blocked ? (
+                              <span className="px-2 py-1 bg-red-500/20 text-red-400 rounded text-xs font-bold uppercase tracking-wider">Blocked</span>
+                            ) : (
+                              <span className="px-2 py-1 bg-emerald-500/10 text-emerald-400 rounded text-xs font-bold uppercase tracking-wider">Active</span>
+                            )}
+                          </td>
+                          <td className="px-6 py-4 text-right">
+                            {u.is_blocked && (
+                              <button onClick={() => handleUnblock(u.id)} className="px-3 py-1 bg-white/10 hover:bg-white/20 rounded text-xs mr-2 transition-colors">
+                                Unblock
+                              </button>
+                            )}
+                            <button onClick={() => handleDelete(u.id)} className="px-3 py-1 bg-red-500/20 hover:bg-red-500/30 text-red-400 rounded text-xs transition-colors">
+                              Revoke
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+            </div>
+          </div>
+
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
+
+================================================================================
+FILE: frontend/app/dev/dashboard/page.tsx
+================================================================================
+
+"use client";
+
+import React, { useEffect, useState } from "react";
+import Link from "next/link";
+import { fetchApi } from "../../lib/api";
+import { useRouter } from "next/navigation";
+
+export default function DevDashboard() {
+  const router = useRouter();
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    // Quick verify, if any error, bounce to login
+    const checkAuth = async () => {
+      try {
+        await fetchApi('/dev/dashboard');
+        setLoading(false);
+      } catch (err) {
+        router.push('/dev/login');
+      }
+    };
+    checkAuth();
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen w-full bg-[#0a0a0a] flex items-center justify-center">
+        <div className="w-10 h-10 border-2 border-white/10 border-t-white rounded-full animate-spin"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="relative min-h-screen w-full bg-[#0a0a0a] text-white overflow-hidden selection:bg-white/20">
+      
+      {/* Background Orbs */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <div className="absolute top-[30%] left-[20%] -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] rounded-full bg-[radial-gradient(circle,_rgba(37,99,235,0.15)_0%,_transparent_70%)] blur-[80px]" />
+        <div className="absolute top-[70%] left-[80%] -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-[radial-gradient(circle,_rgba(255,255,255,0.08)_0%,_transparent_70%)] blur-[80px]" />
+      </div>
+
+      <div className="relative z-10 container mx-auto px-4 py-20 max-w-4xl animate-[fadeUp_0.6s_ease-out]">
+        
+        <header className="mb-12 text-center">
+          <h1 className="text-5xl font-light tracking-tight mb-4 text-white">
+            Developer <span className="font-semibold text-blue-400">Dashboard</span>
+          </h1>
+          <p className="text-neutral-400">Authenticated System Access Verified.</p>
+        </header>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          
+          <Link href="/audit" className="group p-8 bg-white/[0.03] backdrop-blur-xl border border-white/10 hover:border-white/30 hover:bg-white/[0.05] rounded-3xl transition-all duration-300 shadow-[0_4px_30px_rgba(0,0,0,0.1)] hover:shadow-[0_0_40px_rgba(37,99,235,0.15)] flex flex-col justify-center items-center text-center">
+            <div className="w-16 h-16 rounded-2xl bg-blue-500/10 text-blue-400 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+              <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+            </div>
+            <h2 className="text-xl font-semibold mb-2">Audit Ledger</h2>
+            <p className="text-sm text-neutral-500">View public un-tamperable audit logs of system activity.</p>
+          </Link>
+
+          <Link href="/dev/access-logs" className="group p-8 bg-white/[0.03] backdrop-blur-xl border border-white/10 hover:border-white/30 hover:bg-white/[0.05] rounded-3xl transition-all duration-300 shadow-[0_4px_30px_rgba(0,0,0,0.1)] hover:shadow-[0_0_40px_rgba(255,255,255,0.1)] flex flex-col justify-center items-center text-center">
+            <div className="w-16 h-16 rounded-2xl bg-white/5 text-white flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+              <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+            </div>
+            <h2 className="text-xl font-semibold mb-2">Access Logs</h2>
+            <p className="text-sm text-neutral-500">Monitor internal developer authentication and sessions.</p>
+          </Link>
+          
+          <Link href="/dev/admin" className="group p-8 bg-white/[0.03] backdrop-blur-xl border border-white/10 hover:border-white/30 hover:bg-white/[0.05] rounded-3xl transition-all duration-300 shadow-[0_4px_30px_rgba(0,0,0,0.1)] hover:shadow-[0_0_40px_rgba(176,58,46,0.15)] flex flex-col justify-center items-center text-center md:col-span-2">
+            <div className="w-16 h-16 rounded-2xl bg-red-500/10 text-red-400 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform">
+              <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" />
+              </svg>
+            </div>
+            <h2 className="text-xl font-semibold mb-2">Personnel Management</h2>
+            <p className="text-sm text-neutral-500">Manage internal operator access, blocks, and credentials.</p>
+          </Link>
+
+        </div>
+
+        <div className="mt-12 text-center">
+          <button
+            onClick={async () => {
+              try {
+                await fetchApi('/dev/logout');
+                router.push('/dev/login');
+              } catch (e) {
+                router.push('/dev/login');
+              }
+            }}
+            className="px-6 py-3 bg-red-500/10 text-red-400 hover:bg-red-500/20 rounded-xl transition-colors font-semibold shadow-sm inline-flex items-center gap-2"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+            </svg>
+            Terminate Session
+          </button>
+        </div>
+
+      </div>
+    </div>
+  );
+}
+
+
+================================================================================
+FILE: frontend/app/dev/access-logs/page.tsx
+================================================================================
+
+"use client";
+
+import React, { useState, useEffect } from "react";
+import { fetchApi } from "../../lib/api";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+
+interface AccessLog {
+  id: number;
+  developer_id: number;
+  session_id: string;
+  ip_address: string;
+  device: string;
+  login_time: string;
+  logout_time: string | null;
+}
+
+export default function DevAccessLogs() {
+  const router = useRouter();
+  // const searchParams = useSearchParams();
+  // const devId = searchParams.get('developer_id');
+
+  const [logs, setLogs] = useState<AccessLog[]>([]);
+  const [userMap, setUserMap] = useState<Record<string, string>>({});
+  const [loading, setLoading] = useState(true);
+
+  const loadData = async () => {
+    try {
+      const data = await fetchApi('/dev/access-logs');
+      if (data.logs) setLogs(data.logs);
+      if (data.userMap) setUserMap(data.userMap);
+    } catch (err: any) {
+      if (err.message === "Unauthorized") {
+          router.push('/dev/login');
+      }
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    loadData();
+  }, []);
+
+  const handleKick = async (sessionId: string) => {
+    if (!confirm("Terminate session forcefully?")) return;
+    try {
+      await fetchApi(`/dev/kick/${sessionId}`);
+      loadData();
+    } catch (e) {
+      alert("Failed to kick session");
+    }
+  };
+
+  const parseDevice = (userAgentStr: string) => {
+    if (!userAgentStr) return "Unknown";
+    if (userAgentStr.length > 30) return userAgentStr.substring(0, 30) + "...";
+    return userAgentStr;
+  };
+
+  return (
+    <div className="relative min-h-screen w-full bg-[#0a0a0a] text-white selection:bg-white/20">
+
+      {/* Orbs */}
+      <div className="fixed inset-0 pointer-events-none z-0">
+        <div className="absolute top-[80%] left-[80%] -translate-x-1/2 -translate-y-1/2 w-[700px] h-[700px] rounded-full bg-[radial-gradient(circle,_rgba(255,255,255,0.05)_0%,_transparent_70%)] blur-[80px]" />
+      </div>
+
+      <div className="relative z-10 container mx-auto px-4 md:px-8 py-12 max-w-[1400px]">
+
+        <header className="mb-10 flex items-center justify-between border-b border-white/10 pb-6 animate-[fadeUp_0.4s_ease-out]">
+          <div>
+            <h1 className="text-4xl font-light tracking-tight mb-2">
+              Operator <span className="font-semibold text-white">Access Logs</span>
+            </h1>
+            <p className="text-neutral-400 text-sm">Monitor developer authentication footprint and secure active endpoints.</p>
+          </div>
+          <div className="flex gap-4">
+             <Link href="/dev/admin" className="px-5 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-sm transition-colors text-neutral-300 flex items-center">
+                Personnel Management
+             </Link>
+             <Link href="/dev/dashboard" className="px-5 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-sm transition-colors flex items-center">
+               Dashboard
+             </Link>
+          </div>
+        </header>
+
+        <main className="animate-[fadeUp_0.6s_ease-out_0.1s_forwards] opacity-0">
+          <div className="bg-[#111111]/80 backdrop-blur-2xl border border-white/10 rounded-2xl overflow-hidden shadow-2xl">
+              
+              {loading ? (
+                 <div className="p-32 text-center text-neutral-500">
+                    <div className="w-10 h-10 border-2 border-white/10 border-t-white rounded-full animate-spin mx-auto mb-4"></div>
+                    <p className="tracking-widest uppercase text-xs">Tracing signatures...</p>
+                 </div>
+              ) : logs.length === 0 ? (
+                 <div className="p-32 text-center text-neutral-500">
+                   No access records found.
+                 </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-sm whitespace-nowrap">
+                    <thead className="bg-[#151515] border-b border-white/10 text-[10px] uppercase tracking-[0.2em] text-neutral-500">
+                      <tr>
+                        <th className="px-6 py-5 rounded-tl-2xl">Timeline</th>
+                        <th className="px-6 py-5">Operator</th>
+                        <th className="px-6 py-5">Network IP</th>
+                        <th className="px-6 py-5">Device Sig</th>
+                        <th className="px-6 py-5 text-right rounded-tr-2xl">Status / Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-white/5">
+                      {logs.map((log) => {
+                        const inTime = new Date(log.login_time).toLocaleString();
+                        const outTime = log.logout_time ? new Date(log.logout_time).toLocaleString() : null;
+                        const isActive = !log.logout_time;
+                        const uName = userMap[log.developer_id.toString()] || 'Unknown ID';
+
+                        return (
+                          <tr key={log.id} className="hover:bg-white/[0.02] group">
+                            
+                            <td className="px-6 py-4">
+                              <div className="flex flex-col">
+                                <span className="text-emerald-400/80 font-mono text-xs">IN: {inTime}</span>
+                                <span className="text-neutral-500 font-mono text-xs mt-1">
+                                  OUT: {outTime || '---'}
+                                </span>
+                              </div>
+                            </td>
+
+                            <td className="px-6 py-4">
+                               <div className="flex items-center gap-3">
+                                 <div className="w-8 h-8 rounded bg-white/5 border border-white/10 flex items-center justify-center text-xs font-mono text-neutral-400">
+                                   {log.developer_id}
+                                 </div>
+                                 <span className="font-semibold text-neutral-200">{uName}</span>
+                               </div>
+                            </td>
+
+                            <td className="px-6 py-4 font-mono text-xs text-neutral-400">
+                               {log.ip_address}
+                            </td>
+
+                            <td className="px-6 py-4 text-xs text-neutral-500">
+                               {parseDevice(log.device)}
+                            </td>
+
+                            <td className="px-6 py-4 text-right">
+                               {isActive ? (
+                                 <div className="flex items-center justify-end gap-3">
+                                    <span className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-green-400 bg-green-400/10 px-2 py-1 rounded">
+                                      <span className="relative flex h-2 w-2">
+                                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
+                                        <span className="relative inline-flex rounded-full h-2 w-2 bg-green-500"></span>
+                                      </span>
+                                      Active Endpoint
+                                    </span>
+                                    <button 
+                                      onClick={() => handleKick(log.session_id)}
+                                      className="px-3 py-1.5 bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/20 rounded transition-colors text-xs font-semibold"
+                                    >
+                                      Terminate
+                                    </button>
+                                 </div>
+                               ) : (
+                                 <span className="text-xs font-bold uppercase tracking-wider text-neutral-500">
+                                    Terminated
+                                 </span>
+                               )}
+                            </td>
+
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+              
+          </div>
+        </main>
+
+      </div>
+    </div>
+  );
+}
+
+
+================================================================================
+FILE: frontend/app/dev/login/page.tsx
+================================================================================
+
+"use client";
+
+import React, { useState, useRef } from "react";
+import gsap from "gsap";
+import { fetchApi } from "../../lib/api";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+
+export default function DevLogin() {
+  const router = useRouter();
+
+  const [username, setUsername] = useState("");
+  const [password, setPassword] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const buttonRef = useRef(null);
+
+  const handleMouseEnter = () => {
+    gsap.to(buttonRef.current, {
+      scale: 1.05,
+      duration: 0.2,
+      ease: "power2.out",
+    });
+  };
+
+  const handleMouseLeave = () => {
+    gsap.to(buttonRef.current, {
+      scale: 1,
+      duration: 0.2,
+      ease: "power2.out",
+    });
+  };
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg("");
+    setLoading(true);
+
+    try {
+      const data = await fetchApi('/dev/login', {
+        method: 'POST',
+        body: JSON.stringify({ username, password })
+      });
+
+      console.log('Admin login successful', data);
+      router.push('/dev/dashboard');
+    } catch (err: any) {
+      setErrorMsg(err.message || "Failed to login. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="relative min-h-screen w-full bg-[#0a0a0a] flex items-center justify-center overflow-hidden selection:bg-white/20 ">
+
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-[48%] left-[30%] -translate-x-1/2 -translate-y-1/2
+        w-[600px] h-[600px] rounded-full
+        bg-[radial-gradient(circle,_rgba(37,99,235,0.70)_0%,_rgba(37,99,235,0.40)_35%,_rgba(37,99,235,0.12)_60%,_transparent_75%)]
+        blur-[80px]" />
+
+        <div className="absolute top-[70%] left-[72%] -translate-x-1/2 -translate-y-1/2
+          w-[600px] h-[600px] rounded-full
+          bg-[radial-gradient(circle,_rgba(255,255,255,0.35)_0%,_rgba(255,255,255,0.18)_35%,_rgba(255,255,255,0.08)_55%,_transparent_70%)]
+          blur-[80px]" />
+      </div>
+
+      {/* Login Card */}
+      <main className="relative z-10 w-full max-w-md px-6">
+        <div className="bg-[#111111]/80 backdrop-blur-2xl border border-white/10 rounded-[32px] p-8 md:p-12 shadow-[0_0_50px_rgba(37,99,235,0.15)] opacity-0 animate-[fadeUp_0.6s_ease-out_0.1s_forwards]">
+          <header className="text-center mb-10">
+            <h1 className="text-4xl font-light text-white tracking-tight mb-2">
+              Admin Portal
+            </h1>
+            <p className="text-neutral-400 text-sm">
+              Authorized personnel only.
+            </p>
+          </header>
+
+          <form className="space-y-6" onSubmit={handleLogin}>
+
+            {errorMsg && (
+              <div className="p-3 bg-red-500/20 border border-red-500/50 rounded-xl text-red-400 text-sm text-center">
+                {errorMsg}
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <label
+                htmlFor="username"
+                className="block text-[10px] font-semibold text-neutral-500 uppercase tracking-[0.2em] ml-1"
+              >
+                Developer Username
+              </label>
+
+              <input
+                type="text"
+                id="username"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                placeholder="dev_admin"
+                required
+                className="w-full h-12 px-4 bg-white/[0.05] border border-white/10 rounded-xl text-white placeholder-neutral-600 focus:outline-none focus:border-white/30 focus:bg-white/[0.08]"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label
+                htmlFor="password"
+                className="block text-[10px] font-semibold text-neutral-500 uppercase tracking-[0.2em] ml-1"
+              >
+                Password
+              </label>
+
+              <input
+                type="password"
+                id="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter password"
+                required
+                className="w-full h-12 px-4 bg-white/[0.05] border border-white/10 rounded-xl text-white placeholder-neutral-600 focus:outline-none focus:border-white/30 focus:bg-white/[0.08]"
+              />
+            </div>
+
+            {/* Submit */}
+            <button
+              ref={buttonRef}
+              onMouseEnter={handleMouseEnter}
+              onMouseLeave={handleMouseLeave}
+              type="submit"
+              disabled={loading}
+              className="w-full h-12 bg-white text-black font-semibold rounded-xl transition-colors hover:bg-neutral-200 disabled:opacity-50 disabled:cursor-not-allowed mt-4 shadow-[0_0_15px_rgba(255,255,255,0.4)] hover:shadow-[0_0_25px_rgba(255,255,255,0.6)]"
+            >
+              {loading ? "Authenticating..." : "Establish Connection"}
+            </button>
+
+          </form>
+
+          <footer className="mt-10 text-center text-sm text-neutral-500">
+            Unregistered operator?{" "}
+            <Link href="/dev/signup" className="text-neutral-300 hover:text-white font-medium underline underline-offset-4">
+              Request Access
+            </Link>
+          </footer>
+
+        </div>
+      </main>
+
+    </div>
+  );
+}
+
+
+================================================================================
+FILE: frontend/app/forgot/page.tsx
+================================================================================
+
+"use client";
+
+import React, { useState, useRef } from "react";
+import gsap from "gsap";
+import { fetchApi } from "../lib/api";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+
+export default function ForgotPassword() {
+  const router = useRouter();
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  
+  const [errorMsg, setErrorMsg] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
+  const [loading, setLoading] = useState(false);
+  
+  const buttonRef = useRef(null);
+  
+  const handleMouseEnter = () => {
+    gsap.to(buttonRef.current, {
+      scale: 1.05,
+      duration: 0.2,
+      ease: "power2.out",
+    });
+  };
+
+  const handleMouseLeave = () => {
+    gsap.to(buttonRef.current, {
+      scale: 1,
+      duration: 0.2,
+      ease: "power2.out",
+    });
+  };
+
+  const handleReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg("");
+    setSuccessMsg("");
+
+    if (password !== confirmPassword) {
+        setErrorMsg("Passwords do not match");
+        return;
+    }
+
+    setLoading(true);
+
+    try {
+      await fetchApi('/forgot', {
+        method: 'POST',
+        body: JSON.stringify({ email, password })
+      });
+
+      setSuccessMsg("Password successfully reset! Redirecting...");
+      
+      setTimeout(() => {
+        router.push('/login');
+      }, 2000);
+
+    } catch (err: any) {
+      setErrorMsg(err.message || "Failed to reset password. Ensure your email is correct.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
+  return (
+    <div className="relative min-h-screen w-full bg-[#0a0a0a] flex items-center justify-center overflow-hidden selection:bg-white/20 ">
+
+     <div className="absolute inset-0 pointer-events-none overflow-hidden">
+
+      <div className="absolute top-[48%] left-[30%] -translate-x-1/2 -translate-y-1/2
+        w-[600px] h-[600px] rounded-full
+        bg-[radial-gradient(circle,_rgba(176,58,46,0.70)_0%,_rgba(176,58,46,0.40)_35%,_rgba(176,58,46,0.12)_60%,_transparent_75%)]
+        blur-[140px]" />
+
+    <div className="absolute top-[70%] left-[72%] -translate-x-1/2 -translate-y-1/2
+          w-[600px] h-[600px] rounded-full
+          bg-[radial-gradient(circle,_rgba(255,255,255,0.35)_0%,_rgba(255,255,255,0.18)_35%,_rgba(255,255,255,0.08)_55%,_transparent_70%)]
+          blur-[150px]" />
+    </div>
+      {/* Reset Card */}
+      <main className="relative z-10 w-full max-w-md px-6">
+         <div className="bg-white/[0.03] backdrop-blur-2xl border border-white/10 rounded-[32px] p-8 md:p-12 shadow-2xl opacity-0 animate-[fadeUp_0.6s_ease-out_0.1s_forwards]">
+          <header className="text-center mb-10">
+            <h1 className="text-3xl font-light text-white tracking-tight mb-2">
+              Reset Password
+            </h1>
+            <p className="text-neutral-400 text-sm">
+              Enter your email and a new password.
+            </p>
+          </header>
+
+          <form className="space-y-6" onSubmit={handleReset}>
+            
+            {errorMsg && (
+              <div className="p-3 bg-red-500/20 border border-red-500/50 rounded-xl text-red-400 text-sm text-center">
+                {errorMsg}
+              </div>
+            )}
+            
+            {successMsg && (
+              <div className="p-3 bg-green-500/20 border border-green-500/50 rounded-xl text-green-400 text-sm text-center">
+                {successMsg}
+              </div>
+            )}
+
+            <div className="space-y-2">
+              <label
+                htmlFor="email"
+                className="block text-[10px] font-semibold text-neutral-500 uppercase tracking-[0.2em] ml-1"
+              >
+                Account Email
+              </label>
+
+              <input
+                type="email"
+                id="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="john@example.com"
+                required
+                className="w-full h-12 px-4 bg-white/[0.05] border border-white/10 rounded-xl text-white placeholder-neutral-600 focus:outline-none focus:border-white/30 focus:bg-white/[0.08]"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label
+                htmlFor="password"
+                className="block text-[10px] font-semibold text-neutral-500 uppercase tracking-[0.2em] ml-1"
+              >
+                New Password
+              </label>
+
+              <input
+                type="password"
+                id="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter new password"
+                required
+                className="w-full h-12 px-4 bg-white/[0.05] border border-white/10 rounded-xl text-white placeholder-neutral-600 focus:outline-none focus:border-white/30 focus:bg-white/[0.08]"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <label htmlFor="confirmPassword" className="block text-[10px] font-semibold text-neutral-500 uppercase tracking-[0.2em] ml-1">
+                Confirm Password
+              </label>
+              <input
+                type="password"
+                id="confirmPassword"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                placeholder="Confirm new password"
+                required
+                className="w-full h-11 px-4 bg-white/[0.05] border border-white/10 rounded-xl text-white placeholder-neutral-600 focus:outline-none focus:border-white/30 focus:bg-white/[0.08]"
+              />
+            </div>
+
+            {/* Submit */}
+            <button
+              ref={buttonRef}
+              onMouseEnter={handleMouseEnter}
+              onMouseLeave={handleMouseLeave}
+              type="submit"
+              disabled={loading || !!successMsg}
+              className="w-full h-12 bg-white text-black font-semibold rounded-xl transition-colors hover:bg-neutral-200 disabled:opacity-50 disabled:cursor-not-allowed mt-2"
+            >
+              {loading ? "Resetting..." : "Reset Password"}
+            </button>
+
+          </form>
+
+          <footer className="mt-10 text-center text-sm text-neutral-500">
+            Remembered your password?{" "}
+            <Link href="/login" className="text-neutral-300 hover:text-white font-medium underline underline-offset-4">
+              Return to Login
+            </Link>
+          </footer>
+
+        </div>
+      </main>
+
+    </div>
+  );
+}
+
+
+================================================================================
+FILE: frontend/app/login/page.tsx
+================================================================================
+
+"use client";
+
+import React, { useState, useRef } from "react";
+import gsap from "gsap";
+import { fetchApi } from "../lib/api";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+
+export default function Home() {
+  const router = useRouter();
+
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
+  const [errorMsg, setErrorMsg] = useState("");
+  const [loading, setLoading] = useState(false);
+  
+  const buttonRef = useRef(null);
+  
+  const handleMouseEnter = () => {
+    gsap.to(buttonRef.current, {
+      scale: 1.05,
+      duration: 0.2,
+      ease: "power2.out",
+    });
+  };
+
+  const handleMouseLeave = () => {
+    gsap.to(buttonRef.current, {
+      scale: 1,
+      duration: 0.2,
+      ease: "power2.out",
+    });
+  };
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setErrorMsg("");
+    setLoading(true);
+
+    try {
+      // The proxy rewrites this to http://localhost:3000/login
+      const data = await fetchApi('/login', {
+        method: 'POST',
+        body: JSON.stringify({ email, password })
+      });
+
+      // Login successful! Save token or user intent if needed, then redirect
+      console.log('Login successful', data);
+      router.push('/profile'); // Redirect to profile or dashboard page
+    } catch (err: any) {
+      setErrorMsg(err.message || "Failed to login. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+
+  return (
+    <div className="relative min-h-screen w-full bg-[#0a0a0a] flex items-center justify-center overflow-hidden selection:bg-white/20 ">
+
+     <div className="absolute inset-0 pointer-events-none overflow-hidden">
+
+
+      <div className="absolute top-[48%] left-[30%] -translate-x-1/2 -translate-y-1/2
+        w-[600px] h-[600px] rounded-full
+        bg-[radial-gradient(circle,_rgba(176,58,46,0.70)_0%,_rgba(176,58,46,0.40)_35%,_rgba(176,58,46,0.12)_60%,_transparent_75%)]
+        blur-[80px]" />
+
+  <div className="absolute top-[70%] left-[72%] -translate-x-1/2 -translate-y-1/2
+          w-[600px] h-[600px] rounded-full
+          bg-[radial-gradient(circle,_rgba(255,255,255,0.35)_0%,_rgba(255,255,255,0.18)_35%,_rgba(255,255,255,0.08)_55%,_transparent_70%)]
+          blur-[80px]" />
+    </div>
+      {/* Login Card */}
+      <main className="relative z-10 w-full max-w-md px-6">
+         <div className="bg-white/[0.03] backdrop-blur-2xl border border-white/10 rounded-[32px] p-8 md:p-12 shadow-2xl opacity-0 animate-[fadeUp_0.6s_ease-out_0.1s_forwards]">
+          <header className="text-center mb-10">
+            <h1 className="text-4xl font-light text-white tracking-tight mb-2">
+              Login
+            </h1>
+            <p className="text-neutral-400 text-sm">
+              Welcome back, please enter your details.
+            </p>
+          </header>
+
+          <form className="space-y-6" onSubmit={handleLogin}>
+            
+            {errorMsg && (
+              <div className="p-3 bg-red-500/20 border border-red-500/50 rounded-xl text-red-400 text-sm text-center">
+                {errorMsg}
+              </div>
+            )}
+
+            {/* Email (replaces Username for compatibility with backend) */}
+            <div className="space-y-2">
+              <label
+                htmlFor="email"
+                className="block text-[10px] font-semibold text-neutral-500 uppercase tracking-[0.2em] ml-1"
+              >
+                Email
+              </label>
+
+              <input
+                type="email"
+                id="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="john@example.com"
+                required
+                className="w-full h-12 px-4 bg-white/[0.05] border border-white/10 rounded-xl text-white placeholder-neutral-600 focus:outline-none focus:border-white/30 focus:bg-white/[0.08]"
+              />
+            </div>
+
+            {/* Password */}
+            <div className="space-y-2">
+              <label
+                htmlFor="password"
+                className="block text-[10px] font-semibold text-neutral-500 uppercase tracking-[0.2em] ml-1"
+              >
+                Password
+              </label>
+
+              <input
+                type="password"
+                id="password"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                placeholder="Enter password"
+                required
+                className="w-full h-12 px-4 bg-white/[0.05] border border-white/10 rounded-xl text-white placeholder-neutral-600 focus:outline-none focus:border-white/30 focus:bg-white/[0.08]"
+              />
+            </div>
+
+            {/* Remember + Forgot */}
+            <div className="flex items-center justify-between text-xs">
+
+              <label className="flex items-center space-x-2 cursor-pointer group">
+                <div className="relative flex items-center justify-center">
+
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={() => setRememberMe(!rememberMe)}
+                    className="peer sr-only"
+                  />
+
+                  <div className="w-4 h-4 border border-white/20 rounded bg-white/5 peer-checked:bg-white peer-checked:border-white" />
+
+                  <svg
+                    className={`absolute w-3 h-3 text-black ${rememberMe ? "opacity-100" : "opacity-0"}`}
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth={4}
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+                  </svg>
+
+                </div>
+
+                <span className="text-neutral-400 group-hover:text-white">
+                  Remember Me
+                </span>
+              </label>
+
+              <Link href="/forgot" className="text-neutral-400 hover:text-white">
+                Forgot Password?
+              </Link>
+
+            </div>
+
+            {/* Submit */}
+            <button
+              ref={buttonRef}
+              onMouseEnter={handleMouseEnter}
+              onMouseLeave={handleMouseLeave}
+              type="submit"
+              disabled={loading}
+              className="w-full h-12 bg-white text-black font-semibold rounded-xl transition-colors hover:bg-neutral-200 disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? "Signing In..." : "Sign In"}
+            </button>
+
+          </form>
+
+          <footer className="mt-10 text-center text-sm text-neutral-500">
+            Don&apos;t have an account?{" "}
+            <Link href="/signup" className="text-neutral-300 hover:text-white font-medium underline underline-offset-4">
+              Sign up
+            </Link>
+          </footer>
+
+        </div>
+      </main>
+
+    </div>
+  );
+}
+
+================================================================================
+FILE: backend/express_auth_app/package.json
+================================================================================
+
+{
+  "name": "express_project",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "node app.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "bcryptjs": "^3.0.3",
+    "body-parser": "^2.2.2",
+    "connect-flash": "^0.1.1",
+    "cookie-parser": "^1.4.7",
+    "cors": "^2.8.6",
+    "ejs": "^5.0.1",
+    "express": "^5.2.1",
+    "express-session": "^1.19.0",
+    "jsonwebtoken": "^9.0.3",
+    "sequelize": "^6.37.8",
+    "sqlite3": "^6.0.1"
+  }
+}
+
+================================================================================
+FILE: backend/express_auth_app/app.js
+================================================================================
+
+const express = require("express")
+const session = require("express-session")
+const cookieParser = require("cookie-parser")
+const bodyParser = require("body-parser")
+const cors = require("cors")
+const path = require("path")
+
+const sequelize = require("./config/db")
+const authRoutes = require("./routes/authRoutes")
+
+/* AUDIT SDK */
+const audit = require("./auditchainSDK")
+
+const app = express()
+
+/* =====================
+   CORS
+===================== */
+
+app.use(cors({ origin: 'http://localhost:3001', credentials: true }))
+
+/* =====================
+   STATIC FILES
+===================== */
+
+app.use(express.static(path.join(__dirname, "public")))
+
+/* =====================
+   BODY PARSER
+===================== */
+
+app.use(bodyParser.urlencoded({ extended: true }))
+app.use(express.json())
+
+/* =====================
+   COOKIE PARSER
+===================== */
+
+app.use(cookieParser())
+
+/* =====================
+   SESSION
+===================== */
+
+app.use(session({
+    secret: "secret",
+    resave: false,
+    saveUninitialized: true
+}))
+
+
+
+/* =====================
+   AUDIT SDK
+===================== */
+
+audit.init().then(() => {
+    app.use(audit.middleware())
+    app.use("/audit", audit.dashboard)
+
+    /* =====================
+       ROUTES
+    ===================== */
+
+    app.get("/", (req, res) => {
+        res.json({ status: "AuditChain API is running. Please access the App via the Next.js Frontend." });
+    });
+
+    app.use("/", authRoutes)
+
+    /* =====================
+       DATABASE + SERVER
+    ===================== */
+
+    sequelize.sync().then(() => {
+
+        console.log("Database Connected")
+
+        app.listen(3000, () => {
+            console.log("Server running at http://localhost:3000")
+            console.log("Audit dashboard at http://localhost:3000/audit")
+        })
+
+    }).catch(err => {
+        console.log("Database error:", err)
+    })
+}).catch(err => {
+    console.error("Failed to initialize audit SDK:", err);
+});
+
+
+================================================================================
+FILE: backend/express_auth_app/middleware/authMiddleware.js
+================================================================================
+
+const jwt = require("jsonwebtoken");
+
+exports.authUser = (req, res, next) => {
+
+    const token = req.cookies?.token;
+
+    if (!token)
+        return res.status(401).json({ error: "Unauthorized" });
+
+    try {
+
+        const decoded = jwt.verify(token, "JWT_SECRET");
+
+        req.user = decoded;
+
+        next();
+
+    } catch {
+        return res.status(401).json({ error: "Invalid token" });
+    }
+};
+
+
+================================================================================
+FILE: backend/express_auth_app/auditchainSDK/database.js
+================================================================================
+
+const { Sequelize } = require("sequelize")
+
+let sequelize
+
+function initDatabase() {
+
+    sequelize = new Sequelize({
+        dialect: "sqlite",
+        storage: "./audit.sqlite",
+        logging: false
+    })
+
+    return sequelize
+}
+
+module.exports = { initDatabase }
+
+
+================================================================================
+FILE: backend/express_auth_app/auditchainSDK/index.js
+================================================================================
+
+const { initDatabase } = require("./database")
+const auditLogger = require("./auditLogger")
+const createMiddleware = require("./middleware")
+const createDashboard = require("./dashboard")
+
+let sequelize
+let middlewareInstance
+let dashboardInstance
+
+// =====================
+// INIT FUNCTION
+// =====================
+async function init() {
+
+    // ✅ Initialize single DB instance
+    sequelize = initDatabase()
+
+    // ✅ Initialize AuditLog model + table
+    await auditLogger.init(sequelize)
+
+    // ✅ Create middleware (pass DB + logger)
+    middlewareInstance = createMiddleware(sequelize, auditLogger)
+
+    // ✅ Create dashboard router (same DB)
+    dashboardInstance = createDashboard(sequelize)
+
+    console.log("✅ AuditChain SDK Initialized")
+}
+
+// =====================
+// EXPORTS
+// =====================
+module.exports = {
+
+    // 🔥 Initialize SDK
+    init,
+
+    // 🔥 Middleware getter (used in app.js)
+    middleware: () => {
+        if (!middlewareInstance) {
+            throw new Error("Audit SDK not initialized. Call audit.init() first.")
+        }
+        return middlewareInstance
+    },
+
+    // 🔥 Dashboard route handler
+    dashboard: (req, res, next) => {
+        if (!dashboardInstance) {
+            return res.status(500).send("Audit dashboard not initialized")
+        }
+        return dashboardInstance(req, res, next)
+    },
+
+    // 🔥 Direct log access (optional)
+    log: auditLogger.log
+}
+
+
+================================================================================
+FILE: backend/express_auth_app/auditchainSDK/middleware.js
+================================================================================
+
+const { DataTypes, Op } = require("sequelize")
+
+const MAX_ATTEMPTS = 3
+const MAX_DEVICES = 3
+const TIME_WINDOW = 5 * 60 * 1000
+const BLOCK_TIME = 10 * 60 * 1000
+
+module.exports = (sequelize, auditLogger) => {
+
+    const LoginAttempt = sequelize.define("LoginAttempt", {
+        email: DataTypes.STRING,
+        ip_address: DataTypes.STRING,
+        device: DataTypes.STRING,
+        attempts: { type: DataTypes.INTEGER, defaultValue: 0 },
+        last_attempt: DataTypes.DATE,
+        blocked_until: DataTypes.DATE
+    })
+
+    LoginAttempt.sync()
+
+    return async (req, res, next) => {
+
+        try {
+
+            const ip =
+                req.headers["x-forwarded-for"]?.split(",")[0] ||
+                req.socket.remoteAddress
+
+            const user_agent = req.headers["user-agent"]
+
+            // =====================
+            // PAGE VISIT
+            // =====================
+            if (req.method === "GET") {
+                await auditLogger.log({
+                    action: "PAGE_VISIT",
+                    page: req.path,
+                    method: req.method,
+                    ip_address: ip,
+                    user_agent,
+                    status: "INFO"
+                })
+            }
+
+            req.audit = {
+
+                // =====================
+                // GENERIC ACTION LOG
+                // =====================
+                logAction: async (action, user_id = null, attribute_name = null) => {
+                    await auditLogger.log({
+                        action,
+                        attribute_name,
+                        page: req.path,
+                        method: req.method,
+                        user_id,
+                        ip_address: ip,
+                        user_agent,
+                        status: "SUCCESS"
+                    })
+                },
+
+                // =====================
+                // LOGIN TRACKING (FULL)
+                // =====================
+                trackLogin: async (email, success = null, user_id = null) => {
+
+                    const now = new Date()
+
+                    // 🔴 BLOCK CHECK ONLY
+                    if (success === null) {
+
+                        const blockedRecord = await LoginAttempt.findOne({
+                            where: {
+                                email,
+                                blocked_until: {
+                                    [Op.gt]: now
+                                }
+                            }
+                        })
+
+                        if (blockedRecord) {
+                            await auditLogger.log({
+                                action: "LOGIN_BLOCKED",
+                                page: "/login",
+                                method: "POST",
+                                user_id,
+                                ip_address: ip,
+                                user_agent,
+                                status: "BLOCKED"
+                            })
+                        }
+
+                        return { blocked: !!blockedRecord }
+                    }
+
+                    let record = await LoginAttempt.findOne({
+                        where: { email, ip_address: ip }
+                    })
+
+                    if (!record) {
+                        record = await LoginAttempt.create({
+                            email,
+                            ip_address: ip,
+                            user_agent,
+                            attempts: 0,
+                            last_attempt: now
+                        })
+                    }
+
+                    // 🔴 GLOBAL BLOCK CHECK
+                    const blockedRecord = await LoginAttempt.findOne({
+                        where: {
+                            email,
+                            blocked_until: {
+                                [Op.gt]: now
+                            }
+                        }
+                    })
+
+                    if (blockedRecord) {
+
+                        await auditLogger.log({
+                            action: "LOGIN_BLOCKED",
+                            page: "/login",
+                            method: "POST",
+                            user_id,
+                            ip_address: ip,
+                            user_agent,
+                            status: "BLOCKED",
+                            attempt_count: blockedRecord.attempts
+                        })
+
+                        return { blocked: true }
+                    }
+
+                    // =====================
+                    // MULTI DEVICE DETECTION
+                    // =====================
+                    const uniqueIPs = await LoginAttempt.count({
+                        where: { email },
+                        distinct: true,
+                        col: "ip_address"
+                    })
+
+                    if (uniqueIPs >= MAX_DEVICES) {
+
+                        const blockTime = new Date(Date.now() + BLOCK_TIME)
+
+                        await LoginAttempt.update(
+                            { blocked_until: blockTime },
+                            { where: { email } }
+                        )
+
+                        await auditLogger.log({
+                            action: "MULTI_DEVICE_ATTACK",
+                            page: "/login",
+                            method: "POST",
+                            user_id,
+                            ip_address: ip,
+                            user_agent,
+                            status: "SUSPICIOUS",
+                            attempt_count: uniqueIPs
+                        })
+
+                        return { blocked: true }
+                    }
+
+                    // RESET WINDOW
+                    if (now - record.last_attempt > TIME_WINDOW) {
+                        record.attempts = 0
+                    }
+
+                    // =====================
+                    // ❌ FAILED LOGIN
+                    // =====================
+                    if (!success) {
+
+                        record.attempts += 1
+                        record.last_attempt = now
+
+                        let status = "FAILED"
+
+                        if (record.attempts >= MAX_ATTEMPTS) {
+
+                            status = "SUSPICIOUS"
+
+                            const blockTime = new Date(Date.now() + BLOCK_TIME)
+
+                            await LoginAttempt.update(
+                                { blocked_until: blockTime },
+                                { where: { email } }
+                            )
+                        }
+
+                        await record.save()
+
+                        await auditLogger.log({
+                            action: "LOGIN_FAILED",
+                            page: "/login",
+                            method: "POST",
+                            user_id,
+                            ip_address: ip,
+                            user_agent,
+                            status,
+                            attempt_count: record.attempts
+                        })
+
+                        return { blocked: !!record.blocked_until }
+                    }
+
+                    // =====================
+                    // ✅ SUCCESS LOGIN
+                    // =====================
+                    await LoginAttempt.update(
+                        { attempts: 0, blocked_until: null },
+                        { where: { email } }
+                    )
+
+                    await auditLogger.log({
+                        action: "LOGIN_SUCCESS",
+                        page: "/login",
+                        method: "POST",
+                        user_id,
+                        ip_address: ip,
+                        user_agent,
+                        status: "LOGGED_IN"
+                    })
+
+                    return { blocked: false }
+                }
+            }
+
+            next()
+
+        } catch (err) {
+            console.error("Middleware Error:", err)
+            next()
+        }
+    }
+}
+
+
+================================================================================
+FILE: backend/express_auth_app/auditchainSDK/auditLogger.js
+================================================================================
+
+const { generateHash } = require("./hash")
+const EventEmitter = require("events")
+
+const auditEvents = new EventEmitter()
+exports.events = auditEvents
+let AuditLog
+
+// =====================
+// INIT
+// =====================
+exports.init = async (sequelize) => {
+
+    AuditLog = require("./models/AuditLog")(sequelize)
+
+    // 🔥 force reset to ensure all columns exist
+    await AuditLog.sync({ force: true })
+
+    console.log("✅ AuditLog table created")
+}
+
+
+// =====================
+// MAIN LOG FUNCTION
+// =====================
+exports.log = async (data) => {
+
+    try {
+
+        // =====================
+        // 🔥 PAGE VISIT AGGREGATION
+        // =====================
+        if (data.action === "PAGE_VISIT") {
+
+            const lastLog = await AuditLog.findOne({
+                order: [["id", "DESC"]]
+            })
+
+            if (
+                lastLog &&
+                lastLog.action === "PAGE_VISIT" &&
+                lastLog.page === data.page &&
+                lastLog.ip_address === data.ip_address
+            ) {
+                lastLog.visit_count += 1
+                await lastLog.save()
+                return
+            }
+        }
+
+        // =====================
+        // 🔗 HASH CHAIN
+        // =====================
+        const lastLog = await AuditLog.findOne({
+            order: [["id", "DESC"]]
+        })
+
+        const previous_hash = lastLog ? lastLog.current_hash : "GENESIS"
+
+        const logData = {
+            ...data,
+            previous_hash
+        }
+
+        const current_hash = generateHash(logData)
+
+        const newLog = await AuditLog.create({
+            ...logData,
+            current_hash
+        })
+
+        // 🔥 Broadcast new log to real-time subscribers
+        auditEvents.emit("new_log", newLog)
+
+    } catch (err) {
+        console.error("Audit Log Error:", err)
+    }
+}
+
+
+================================================================================
+FILE: backend/express_auth_app/auditchainSDK/dashboard.js
+================================================================================
+
+const express = require("express")
+const path = require("path")
+
+let AuditLog
+
+module.exports = (sequelize) => {
+
+    const router = express.Router()
+
+    if (!AuditLog) {
+        AuditLog = require("./models/AuditLog")(sequelize)
+    }
+
+    router.get("/", async (req, res) => {
+
+        const logs = await AuditLog.findAll({
+            order: [["id", "DESC"]],
+            limit: 100
+        })
+
+        // ✅ Return JSON instead of rendering EJS
+        res.json({ logs });
+    })
+
+    // 🔥 REAL-TIME EVENTS (SSE)
+    router.get("/events", (req, res) => {
+        res.setHeader('Content-Type', 'text/event-stream');
+        res.setHeader('Cache-Control', 'no-cache');
+        res.setHeader('Connection', 'keep-alive');
+
+        const auditLogger = require("./auditLogger");
+        
+        const onNewLog = () => {
+            res.write(`data: update\n\n`);
+        };
+
+        auditLogger.events.on("new_log", onNewLog);
+
+        req.on("close", () => {
+            auditLogger.events.removeListener("new_log", onNewLog);
+        });
+    })
+
+    return router
+}
+
+
+================================================================================
+FILE: backend/express_auth_app/auditchainSDK/hash.js
+================================================================================
+
+const crypto = require("crypto")
+
+function generateHash(data) {
+    return crypto
+        .createHash("sha256")
+        .update(JSON.stringify(data))
+        .digest("hex")
+}
+
+module.exports = { generateHash }
+
+
+================================================================================
+FILE: backend/express_auth_app/auditchainSDK/models/LoginAttempt.js
+================================================================================
+
+const { DataTypes } = require("sequelize")
+
+module.exports = (sequelize) => {
+
+    return sequelize.define("LoginAttempt", {
+
+        email: DataTypes.STRING,
+
+        ip_address: DataTypes.STRING,
+
+        user_agent: DataTypes.STRING,
+
+        attempts: {
+            type: DataTypes.INTEGER,
+            defaultValue: 0
+        },
+
+        last_attempt: DataTypes.DATE,
+
+        blocked_until: {
+            type: DataTypes.DATE,
+            allowNull: true
+        }
+    })
+}
+
+
+================================================================================
+FILE: backend/express_auth_app/auditchainSDK/models/AuditLog.js
+================================================================================
+
+const { DataTypes } = require("sequelize")
+
+module.exports = (sequelize) => {
+
+    return sequelize.define("AuditLog", {
+
+        action: DataTypes.STRING,
+        attribute_name: DataTypes.STRING,
+
+        page: DataTypes.STRING,
+
+        method: DataTypes.STRING,
+
+        user_id: DataTypes.INTEGER,
+
+        ip_address: DataTypes.STRING,
+
+        user_agent: DataTypes.STRING,
+
+        status: DataTypes.STRING,
+
+        attempt_count: DataTypes.INTEGER,
+
+        visit_count: {
+            type: DataTypes.INTEGER,
+            defaultValue: 1
+        },
+
+        previous_hash: DataTypes.STRING,
+
+        current_hash: DataTypes.STRING
+    })
+}
+
+
+================================================================================
+FILE: backend/express_auth_app/audit-access-service/debug_db.js
+================================================================================
+
+const Developer = require("./models/Developer");
+const sequelize = require("./config/db");
+
+async function test() {
+    try {
+        await sequelize.sync();
+        const user = await Developer.findOne({ where: { username: 'test' } });
+        console.log("Success:", user);
+    } catch (err) {
+        console.error("DEBUG ERROR:", err);
+    } finally {
+        await sequelize.close();
+    }
+}
+
+test();
+
+
+================================================================================
+FILE: backend/express_auth_app/audit-access-service/package.json
+================================================================================
+
+{
+  "name": "audit-access-service",
+  "version": "1.0.0",
+  "description": "Audit Access Control Service",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "express": "^4.18.2",
+    "express-session": "^1.17.3",
+    "sequelize": "^6.32.1",
+    "sqlite3": "^5.1.6",
+    "ejs": "^3.1.9",
+    "cookie-parser": "^1.4.6"
+  }
+}
+
+
+================================================================================
+FILE: backend/express_auth_app/audit-access-service/app.js
+================================================================================
+
+const express = require("express");
+const session = require("express-session");
+const path = require("path");
+
+const sequelize = require("./config/db");
+const routes = require("./routes/routes");
+
+const app = express();
+
+app.set("view engine", "ejs");
+app.set("views", path.join(__dirname, "views"));
+
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
+
+// 🔥 FIXED SESSION (IMPORTANT)
+app.use(session({
+    secret: "secret",
+    resave: false,
+    saveUninitialized: true,
+    cookie: {
+        httpOnly: true,
+        sameSite: "lax"
+    }
+}));
+
+app.use("/", routes);
+
+sequelize.sync().then(() => {
+    app.listen(4000, () => {
+        console.log("Audit Access Service running on http://localhost:4000");
+    });
+});
+
+
+================================================================================
+FILE: backend/express_auth_app/audit-access-service/config/db.js
+================================================================================
+
+const { Sequelize } = require("sequelize");
+
+const sequelize = new Sequelize({
+    dialect: "sqlite",
+    storage: "./audit_access.sqlite",
+    logging: false
+});
+
+module.exports = sequelize;
+
+
+================================================================================
+FILE: backend/express_auth_app/audit-access-service/models/Developer.js
+================================================================================
+
+const { DataTypes } = require("sequelize");
+const sequelize = require("../config/db");
+
+const Developer = sequelize.define("Developer", {
+
+    username: {
+        type: DataTypes.STRING,
+        unique: true
+    },
+
+    email: DataTypes.STRING,
+
+    dob: DataTypes.DATEONLY,
+
+    password: DataTypes.STRING,
+
+    attempts: {
+        type: DataTypes.INTEGER,
+        defaultValue: 0
+    },
+
+    is_blocked: {
+        type: DataTypes.BOOLEAN,
+        defaultValue: false
+    }
+
+});
+
+module.exports = Developer;
+
+
+================================================================================
+FILE: backend/express_auth_app/audit-access-service/models/AccessLog.js
+================================================================================
+
+const { DataTypes } = require("sequelize");
+const sequelize = require("../config/db");
+
+const AccessLog = sequelize.define("AccessLog", {
+
+    developer_id: DataTypes.INTEGER,
+
+    session_id: DataTypes.STRING,   // ✅ NEW
+
+    ip_address: DataTypes.STRING,
+
+    device: DataTypes.STRING,
+
+    login_time: DataTypes.DATE,
+
+    logout_time: DataTypes.DATE
+});
+
+module.exports = AccessLog;
+
+
+================================================================================
+FILE: backend/express_auth_app/audit-access-service/controllers/controller.js
+================================================================================
+
+const bcrypt = require("bcryptjs");
+const Developer = require("../models/Developer");
+const AccessLog = require("../models/AccessLog");
+
+
+// =====================
+// LOGIN (AUTO REDIRECT)
+// =====================
+exports.login = async (req, res) => {
+
+    try {
+
+        const { username, password } = req.body;
+
+        const ip = req.ip;
+        const device = req.headers["user-agent"];
+
+        const user = await Developer.findOne({ where: { username } });
+
+        if (!user) return res.status(401).json({ error: "User not found" });
+
+        // 🚫 BLOCK CHECK
+        if (user.is_blocked) {
+            return res.status(403).json({ error: "Permanently blocked by admin" });
+        }
+
+        const valid = await bcrypt.compare(password, user.password);
+
+        if (!valid) {
+
+            user.attempts += 1;
+
+            if (user.attempts >= 3) {
+                user.is_blocked = true;
+            }
+
+            await user.save();
+
+            return res.status(401).json({ error: "Incorrect password" });
+        }
+
+        // ✅ SUCCESS
+        user.attempts = 0;
+        await user.save();
+
+        // 🔐 SESSION (ONLY THIS MATTERS NOW)
+        req.session.dev = user.id;
+
+        await AccessLog.create({
+            developer_id: user.id,
+            session_id: req.sessionID,
+            ip_address: ip,
+            device,
+            login_time: new Date()
+        });
+
+        res.json({ message: "Logged in successfully" });
+
+    } catch (err) {
+        console.error("LOGIN ERROR:", err);
+        res.status(500).json({ error: "Something went wrong" });
+    }
+};
+
+
+
+// =====================
+// LOGOUT (FULL DESTROY)
+// =====================
+exports.logout = async (req, res) => {
+
+    try {
+
+        const userId = req.session.dev;
+
+        if (userId) {
+            await AccessLog.update(
+                { logout_time: new Date() },
+                {
+                    where: {
+                        developer_id: userId,
+                        logout_time: null
+                    }
+                }
+            );
+        }
+
+        // 🔥 DESTROY SESSION COMPLETELY
+        req.session.destroy((err) => {
+            if (err) console.log(err);
+        });
+
+        res.json({ message: "Logged out successfully" });
+
+    } catch (err) {
+        console.error("LOGOUT ERROR:", err);
+        res.status(500).json({ error: "Something went wrong" });
+    }
+};
+
+
+
+// =====================
+// PROTECT
+// =====================
+exports.protect = (req, res, next) => {
+
+    if (!req.session.dev) {
+        return res.status(401).json({ error: "Unauthorized" });
+    }
+
+    next();
+};
+
+
+
+// =====================
+// ADMIN PANEL
+// =====================
+exports.admin = async (req, res) => {
+
+    const users = await Developer.findAll();
+
+    res.json({ users });
+};
+
+
+
+// =====================
+// REGISTER
+// =====================
+exports.register = async (req, res) => {
+
+    const { username, email, dob, password } = req.body;
+
+    const hash = await bcrypt.hash(password, 10);
+
+    await Developer.create({
+        username,
+        email,
+        dob,
+        password: hash
+    });
+
+    res.status(201).json({ message: "Developer registered" });
+};
+
+
+
+// =====================
+// UNBLOCK
+// =====================
+exports.unblock = async (req, res) => {
+
+    const user = await Developer.findByPk(req.params.id);
+
+    if (user) {
+        user.is_blocked = false;
+        user.attempts = 0;
+        await user.save();
+    }
+
+    res.json({ message: "Developer unblocked" });
+};
+
+
+
+// =====================
+// ACCESS LOGS (FILTER)
+// =====================
+exports.accessLogs = async (req, res) => {
+
+    const { developer_id } = req.query;
+
+    let logs = [];
+    let error = null;
+
+    if (developer_id) {
+
+        const user = await Developer.findByPk(developer_id);
+
+        if (!user) {
+            error = "User does not exist";
+        } else {
+            logs = await AccessLog.findAll({
+                where: { developer_id },
+                order: [["id", "DESC"]]
+            });
+        }
+
+    } else {
+        logs = await AccessLog.findAll({
+            order: [["id", "DESC"]]
+        });
+    }
+
+    const users = await Developer.findAll();
+
+    const userMap = {};
+    users.forEach(u => userMap[u.id] = u.username);
+
+    res.json({
+        logs,
+        userMap,
+        error,
+        developer_id
+    });
+};
+
+
+
+// =====================
+// KICK USER (REAL FIX)
+// =====================
+exports.kickUser = async (req, res) => {
+
+    const { sessionId } = req.params;
+
+    await AccessLog.update(
+        { logout_time: new Date() },
+        {
+            where: {
+                session_id: sessionId,
+                logout_time: null
+            }
+        }
+    );
+
+    // 🔥 DESTROY THAT SESSION
+    req.sessionStore.destroy(sessionId, (err) => {
+        if (err) console.log(err);
+    });
+
+    res.json({ message: "User kicked" });
+};
+
+
+// =====================
+// DELETE DEVELOPER
+// =====================
+exports.deleteDeveloper = async (req, res) => {
+
+    try {
+
+        const user = await Developer.findByPk(req.params.id);
+
+        if (!user) {
+            return res.status(404).json({ error: "Developer not found" });
+        }
+
+        // 🔥 OPTIONAL: delete all access logs of this developer
+        await AccessLog.destroy({
+            where: { developer_id: user.id }
+        });
+
+        // 🔥 delete developer
+        await user.destroy();
+
+        res.json({ message: "Developer deleted" });
+
+    } catch (err) {
+        console.error("DELETE ERROR:", err);
+        res.status(500).json({ error: "Something went wrong" });
+    }
+};
+// =====================
+// VERIFY SESSION (FOR MAIN APP)
+// =====================
+exports.verifySession = (req, res) => {
+
+    if (!req.session.dev) {
+        return res.json({ valid: false });
+    }
+
+    res.json({
+        valid: true,
+        developer_id: req.session.dev
+    });
+};
+
+
+================================================================================
+FILE: backend/express_auth_app/audit-access-service/routes/routes.js
+================================================================================
+
+const express = require("express");
+const router = express.Router();
+const controller = require("../controllers/controller");
+
+// ROOT
+router.get("/", (req, res) => res.json({ message: "Audit Access Service API" }));
+
+// LOGIN
+router.get("/login", (req, res) => res.json({ message: "Login endpoint" }));
+router.post("/login", controller.login);
+
+// LOGOUT
+router.get("/logout", controller.logout);
+
+// DASHBOARD
+router.get("/dashboard", controller.protect, (req, res) => {
+    res.json({ message: "Dashboard endpoint" });
+});
+
+// ADMIN + OTHER ROUTES (keep yours)
+router.get("/admin", controller.admin);
+router.post("/register", controller.register);
+router.get("/unblock/:id", controller.unblock);
+
+router.get("/access-logs", controller.accessLogs);
+router.get("/kick/:sessionId", controller.kickUser);
+router.get("/delete/:id", controller.deleteDeveloper);
+
+// VERIFY SESSION (IMPORTANT for main app)
+router.get("/verify-session", controller.verifySession);
+
+module.exports = router;
+
+
+================================================================================
+FILE: backend/express_auth_app/config/db.js
+================================================================================
+
+const { Sequelize } = require("sequelize");
+
+const sequelize = new Sequelize({
+    dialect: "sqlite",
+    storage: "./database.sqlite",
+    logging: false
+});
+
+module.exports = sequelize;
+
+
+================================================================================
+FILE: backend/express_auth_app/utils/password.js
+================================================================================
+
+const bcrypt = require("bcryptjs");
+
+exports.hashPassword = async (password) => {
+    return await bcrypt.hash(password, 10);
+};
+
+exports.verifyPassword = async (password, hash) => {
+    return await bcrypt.compare(password, hash);
+};
+
+
+================================================================================
+FILE: backend/express_auth_app/models/User.js
+================================================================================
+
+const { DataTypes } = require("sequelize");
+const sequelize = require("../config/db");
+
+const User = sequelize.define("User", {
+
+    username: {
+        type: DataTypes.STRING,
+        unique: true,
+        allowNull: false
+    },
+
+    email: {
+        type: DataTypes.STRING,
+        unique: true,
+        allowNull: false
+    },
+
+    date_of_birth: {
+        type: DataTypes.DATEONLY,
+        allowNull: false
+    },
+
+    age: {
+        type: DataTypes.INTEGER
+    },
+
+    password: {
+        type: DataTypes.STRING,
+        allowNull: false
+    }
+
+});
+
+module.exports = User;
+
+
+================================================================================
+FILE: backend/express_auth_app/public/css/style.css
+================================================================================
+
+body{
+background:#f4f6f9;
+font-family:Arial;
+}
+
+.card{
+background:white;
+padding:30px;
+border-radius:10px;
+box-shadow:0 4px 15px rgba(0,0,0,0.1);
+max-width:500px;
+margin:auto;
+margin-top:60px;
+}
+
+.btn{
+padding:10px 18px;
+margin-top:10px;
+border-radius:6px;
+text-decoration:none;
+}
+
+
+================================================================================
+FILE: backend/express_auth_app/controllers/authController.js
+================================================================================
+
+const User = require("../models/User");
+const jwt = require("jsonwebtoken");
+const { hashPassword, verifyPassword } = require("../utils/password");
+
+
+// =====================
+// PAGES
+// =====================
+
+exports.loginPage = (req, res) => res.json({ message: "Login endpoint" });
+exports.signupPage = (req, res) => res.json({ message: "Signup endpoint" });
+exports.deletePage = (req, res) => res.json({ message: "Delete endpoint" });
+exports.forgotPage = (req, res) => res.json({ message: "Forgot endpoint" });
+
+exports.profile = async (req, res) => {
+    const user = await User.findByPk(req.user.id, {
+        attributes: { exclude: ['password'] }
+    });
+    
+    if (!user) {
+        return res.status(404).json({ error: "User not found" });
+    }
+
+    res.json({ user });
+};
+
+exports.updatePage = async (req, res) => {
+    res.json({ message: "Update endpoint" });
+};
+
+
+// =====================
+// SIGNUP
+// =====================
+
+exports.signup = async (req, res) => {
+
+    try {
+
+        const { username, email, date_of_birth, password } = req.body;
+
+        if (!username || !email || !password || !date_of_birth) {
+            return res.status(400).json({ error: "All fields required" });
+        }
+
+        const existingEmail = await User.findOne({ where: { email } });
+        if (existingEmail) {
+            return res.status(400).json({ error: "Email already exists" });
+        }
+
+        const existingUsername = await User.findOne({ where: { username } });
+        if (existingUsername) {
+            return res.status(400).json({ error: "Username taken" });
+        }
+
+        const hash = await hashPassword(password);
+
+        const dob = new Date(date_of_birth);
+        const age = new Date().getFullYear() - dob.getFullYear();
+
+        const newUser = await User.create({
+            username,
+            email,
+            date_of_birth: dob,
+            age,
+            password: hash
+        });
+
+        await req.audit.logAction("SIGNUP", newUser.id);
+
+        res.status(201).json({ message: "Account created" });
+
+    } catch (err) {
+        console.error("SIGNUP ERROR:", err);
+        res.status(500).json({ error: "Something went wrong" });
+    }
+};
+
+
+// =====================
+// LOGIN (FINAL SECURE)
+// =====================
+
+exports.login = async (req, res) => {
+
+    try {
+
+        const { email, password } = req.body;
+
+        // 🔴 STEP 1: BLOCK CHECK FIRST
+        const blockCheck = await req.audit.trackLogin(email, null);
+
+        if (blockCheck.blocked) {
+            return res.status(403).json({ error: "Account blocked. Try after 10 minutes." });
+        }
+
+        const user = await User.findOne({ where: { email } });
+
+        // ❌ USER NOT FOUND
+        if (!user) {
+
+            const result = await req.audit.trackLogin(email, false);
+
+            if (result.blocked) {
+                return res.status(403).json({ error: "Too many attempts. Account blocked." });
+            }
+
+            return res.status(401).json({ error: "User not found" });
+        }
+
+        // ❌ WRONG PASSWORD
+        const valid = await verifyPassword(password, user.password);
+
+        if (!valid) {
+
+            const result = await req.audit.trackLogin(email, false, user.id);
+
+            if (result.blocked) {
+                return res.status(403).json({ error: "Too many attempts. Account blocked." });
+            }
+
+            return res.status(401).json({ error: "Incorrect password" });
+        }
+
+        // 🔴 STEP 2: DOUBLE BLOCK CHECK
+        const finalCheck = await req.audit.trackLogin(email, null, user.id);
+
+        if (finalCheck.blocked) {
+            return res.status(403).json({ error: "Account blocked. Try later." });
+        }
+
+        // ✅ SUCCESS LOGIN
+        await req.audit.trackLogin(email, true, user.id);
+
+        const token = jwt.sign(
+            { id: user.id },
+            "JWT_SECRET",
+            { expiresIn: "1h" }
+        );
+
+        res.cookie("token", token, { httpOnly: true, sameSite: 'lax' });
+
+        res.json({ message: "Logged in successfully", user: { id: user.id, username: user.username, email: user.email } });
+
+    } catch (err) {
+        console.error("LOGIN ERROR:", err);
+        res.status(500).json({ error: "Something went wrong" });
+    }
+};
+
+
+// =====================
+// UPDATE
+// =====================
+
+exports.update = async (req, res) => {
+
+    const user = await User.findByPk(req.user.id);
+    
+    if (!user) {
+        return res.status(404).json({ error: "User not found" });
+    }
+
+    await user.update(req.body);
+
+    await req.audit.logAction("UPDATE_PROFILE", user.id);
+
+    res.json({ message: "Profile updated successfully" });
+};
+
+
+// =====================
+// SETTINGS
+// =====================
+
+exports.updateSettings = async (req, res) => {
+    try {
+        const user = await User.findByPk(req.user.id);
+        
+        if (!user) {
+            return res.status(404).json({ error: "User not found" });
+        }
+
+        // We log the setting changes to the audit ledger
+        const updates = Object.keys(req.body);
+        
+        for (const key of updates) {
+            const value = req.body[key];
+            const detailStr = `${key.toUpperCase().replace(/_/g, " ")}: ${value.toString().toUpperCase()}`;
+            await req.audit.logAction("Updated Configuration", user.id, detailStr);
+        }
+
+        res.json({ message: "Settings updated successfully" });
+    } catch (err) {
+        console.error("SETTINGS ERROR:", err);
+        res.status(500).json({ error: "Something went wrong" });
+    }
+};
+
+
+// =====================
+// DELETE
+// =====================
+
+exports.deleteAccount = async (req, res) => {
+
+    const user = await User.findByPk(req.user.id);
+    
+    if (!user) {
+        return res.status(404).json({ error: "User not found" });
+    }
+
+    await user.destroy();
+
+    await req.audit.logAction("DELETE_ACCOUNT", user.id);
+
+    res.clearCookie("token");
+
+    res.json({ message: "Account deleted successfully" });
+};
+
+
+// =====================
+// FORGOT PASSWORD
+// =====================
+
+exports.forgotPassword = async (req, res) => {
+
+    const { email, password } = req.body;
+
+    const user = await User.findOne({ where: { email } });
+
+    if (!user) {
+        return res.status(404).json({ error: "User not found" });
+    }
+
+    user.password = await hashPassword(password);
+    await user.save();
+
+    await req.audit.logAction("PASSWORD_RESET", user.id);
+
+    res.json({ message: "Password updated successfully" });
+};
+
+
+// =====================
+// LOGOUT
+// =====================
+
+exports.logout = (req, res) => {
+    res.clearCookie("token");
+    res.json({ message: "Logged out successfully" });
+};
+
+
+================================================================================
+FILE: backend/express_auth_app/routes/authRoutes.js
+================================================================================
+
+const express = require("express");
+const router = express.Router();
+
+const authController = require("../controllers/authController");
+const { authUser } = require("../middleware/authMiddleware");
+
+router.post("/login", authController.login);
+
+router.post("/signup", authController.signup);
+
+router.get("/profile", authUser, authController.profile);
+
+router.post("/update", authUser, authController.update);
+
+router.post("/settings", authUser, authController.updateSettings);
+
+router.post("/delete", authUser, authController.deleteAccount);
+
+router.post("/forgot", authController.forgotPassword);
+
+router.post("/logout", authController.logout);
+
+
+module.exports = router;
+

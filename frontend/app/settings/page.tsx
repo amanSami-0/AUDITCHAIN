@@ -4,8 +4,10 @@ import React, { useState } from "react";
 import { fetchApi } from "../lib/api";
 import Link from "next/link";
 import gsap from "gsap";
+import { useRouter } from "next/navigation";
 
 export default function Settings() {
+  const router = useRouter();
   const [maintenanceMode, setMaintenanceMode] = useState(false);
   const [mfaEnabled, setMfaEnabled] = useState(false);
   const [emailAlerts, setEmailAlerts] = useState(true);
@@ -40,13 +42,33 @@ export default function Settings() {
       
       setSuccessMsg(`"${settingKey}" ${newValue ? 'Enabled' : 'Disabled'}`);
       setTimeout(() => setSuccessMsg(""), 3000);
-
     } catch (err) {
       // Revert if API failed
       setter(currentValue);
       setSuccessMsg(`Failed to update ${settingKey}.`);
       setTimeout(() => setSuccessMsg(""), 3000);
     } finally {
+      setLoadingAction("");
+    }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (!window.confirm("Are you sure you want to permanently delete your account? This cannot be undone.")) {
+      return;
+    }
+    
+    setLoadingAction('DELETE_ACCOUNT');
+    setSuccessMsg("");
+
+    try {
+      await fetchApi('/delete', {
+        method: 'POST'
+      });
+      
+      router.push('/signup');
+    } catch (err) {
+      setSuccessMsg("Failed to delete account.");
+      setTimeout(() => setSuccessMsg(""), 3000);
       setLoadingAction("");
     }
   };
@@ -171,6 +193,31 @@ export default function Settings() {
                 {createToggleUI("Strict IP Binding", "Lock all active operator sessions to their initial authorization IP address.", "IP_BINDING", ipBinding, setIpBinding)}
                 {createToggleUI("Session Timeout Enforcement", "Aggressively prune idle operator connections after 15 minutes of inactivity.", "IDLE_TIMEOUT", idleTimeout, setIdleTimeout)}
                 {createToggleUI("Dark Web Data Sync", "Continuously cross-reference signatures against compromised credential databases.", "DARK_WEB_SYNC", darkWebSync, setDarkWebSync)}
+            </div>
+          </section>
+          {/* Section 4 (Danger Zone) */}
+          <section className="bg-red-500/[0.02] backdrop-blur-2xl border border-red-500/20 rounded-2xl overflow-hidden shadow-2xl p-6 md:p-8 space-y-3 mt-8">
+            <div className="mb-6 pb-4 border-b border-red-500/10">
+                <h2 className="text-sm uppercase tracking-[0.2em] font-bold text-red-500 flex items-center gap-2">
+                    <svg className="w-4 h-4 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                    </svg>
+                    Danger Zone
+                </h2>
+            </div>
+            
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 p-5 bg-red-500/[0.05] border border-red-500/10 rounded-xl">
+                <div>
+                    <h3 className="font-medium text-white text-sm mb-1 tracking-wide">Delete Account</h3>
+                    <p className="text-xs text-neutral-400 max-w-[250px] md:max-w-none">Permanently remove your account and all associated data. This action cannot be undone.</p>
+                </div>
+                <button
+                    onClick={handleDeleteAccount}
+                    disabled={loadingAction === 'DELETE_ACCOUNT'}
+                    className="px-5 py-2.5 bg-red-500/10 hover:bg-red-500/20 border border-red-500/20 text-red-400 text-sm font-medium rounded-lg transition-colors flex-shrink-0 disabled:opacity-50"
+                >
+                    {loadingAction === 'DELETE_ACCOUNT' ? 'Deleting...' : 'Delete Account'}
+                </button>
             </div>
           </section>
 

@@ -61,6 +61,8 @@ router.get("/delete/:id", controller.deleteDeveloper);
 // =====================
 // SESSION CONTROL
 // =====================
+router.get("/dashboard", jwtVerify, controller.dashboard);
+
 router.get("/kick/:sessionId", controller.kickUser);
 
 // =====================
@@ -151,9 +153,8 @@ router.get("/verify-log", async (req, res) => {
     }
 });
 
-// =====================
-// INTRUDER
-// =====================
+router.get("/events", controller.events);
+
 router.get(
     "/intruder-log",
     controller.logIntruder

@@ -27,6 +27,29 @@ export default function AuditLogs() {
   const [logs, setLogs] = useState<AggregatedAuditLog[]>([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
+  const [verifyMessage, setVerifyMessage] = useState<{ text: string; isError: boolean } | null>(null);
+  const [verifying, setVerifying] = useState(false);
+
+  const handleVerify = async () => {
+    setVerifying(true);
+    setVerifyMessage(null);
+    try {
+      const data = await fetchApi('/audit/verify');
+      if (data.valid) {
+        setVerifyMessage({ text: "Cryptographic Chain Verified. No tampering detected.", isError: false });
+      } else {
+        setVerifyMessage({ text: data.error || "Tampering Detected!", isError: true });
+      }
+    } catch (err: any) {
+      setVerifyMessage({ text: err.message || "Failed to verify chain.", isError: true });
+    } finally {
+      setVerifying(false);
+    }
+  };
+
+  const handleExport = () => {
+    window.location.href = "/api/audit/export";
+  };
 
   useEffect(() => {
     const fetchLogs = async () => {
@@ -70,9 +93,9 @@ export default function AuditLogs() {
         });
 
         setLogs(aggregated);
-      } catch (err: unknown) {
+      } catch (err: any) {
         console.error("Failed to load audit logs", err);
-        setErrorMsg("Failed to load audit logs. Are you sure the backend SDK is logging?");
+        setErrorMsg(err.message || "Failed to load audit logs. Are you sure the backend SDK is logging?");
       } finally {
         setLoading(false);
       }
@@ -83,7 +106,7 @@ export default function AuditLogs() {
 
   // 🔥 Real-time Update Listener
   useEffect(() => {
-    const eventSource = new EventSource('/api/dev/events');
+    const eventSource = new EventSource('/api/dev/events', { withCredentials: true });
 
     eventSource.onmessage = (event) => {
       if (event.data === 'update') {
@@ -171,7 +194,23 @@ export default function AuditLogs() {
             <p className="text-neutral-400 text-sm">Immutable ledger of system events and entity modifications.</p>
           </div>
           <div>
-            <div className="flex gap-3">
+            <div className="flex flex-wrap gap-3">
+              <button onClick={handleExport} className="px-5 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-sm transition-colors backdrop-blur-md inline-flex items-center gap-2 text-neutral-300 hover:text-white">
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                </svg>
+                Export CSV
+              </button>
+              <button onClick={handleVerify} disabled={verifying} className="px-5 py-2.5 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 rounded-lg text-sm transition-colors backdrop-blur-md inline-flex items-center gap-2 text-blue-400 disabled:opacity-50 disabled:cursor-not-allowed">
+                {verifying ? (
+                  <div className="w-4 h-4 border-2 border-blue-400/30 border-t-blue-400 rounded-full animate-spin"></div>
+                ) : (
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                  </svg>
+                )}
+                Verify Chain
+              </button>
               <Link href="/hashes" className="px-5 py-2.5 bg-white text-black font-semibold rounded-lg text-sm hover:bg-neutral-200 transition-colors inline-flex items-center gap-2 shadow-[0_0_15px_rgba(255,255,255,0.1)]">
                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" />
@@ -187,6 +226,27 @@ export default function AuditLogs() {
             </div>
           </div>
         </header>
+
+        {verifyMessage && (
+          <div className={`mb-6 p-4 rounded-xl border flex items-start gap-3 animate-[fadeUp_0.3s_ease-out] ${verifyMessage.isError ? 'bg-red-500/10 border-red-500/20 text-red-400' : 'bg-green-500/10 border-green-500/20 text-green-400'}`}>
+            <svg className="w-5 h-5 shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              {verifyMessage.isError ? (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              ) : (
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+              )}
+            </svg>
+            <div className="flex-grow">
+              <p className="font-semibold text-sm">{verifyMessage.isError ? 'Verification Failed' : 'Verification Successful'}</p>
+              <p className="text-sm opacity-80">{verifyMessage.text}</p>
+            </div>
+            <button onClick={() => setVerifyMessage(null)} className="opacity-50 hover:opacity-100">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          </div>
+        )}
 
         {/* Content */}
         <main className="animate-[fadeUp_0.6s_ease-out_0.1s_forwards] opacity-0">

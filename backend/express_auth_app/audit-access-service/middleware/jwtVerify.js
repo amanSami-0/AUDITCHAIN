@@ -4,7 +4,7 @@ module.exports = (req, res, next) => {
 
     try {
 
-        const token = req.cookies?.token;
+        const token = req.cookies?.audit_token;
 
         if (!token) {
             return res.json({ valid: false });

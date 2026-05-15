@@ -24,13 +24,36 @@ export default function DevAdmin() {
   const [dob, setDob] = useState("");
   const [password, setPassword] = useState("");
 
+  const [activityModalOpen, setActivityModalOpen] = useState(false);
+  const [activeDevId, setActiveDevId] = useState<number | null>(null);
+  const [activityLogs, setActivityLogs] = useState<any[]>([]);
+  const [loadingActivity, setLoadingActivity] = useState(false);
+
+  const handleViewActivity = async (id: number) => {
+    setActiveDevId(id);
+    setActivityModalOpen(true);
+    setLoadingActivity(true);
+    try {
+      const data = await fetchApi(`/dev/developer-activity/${id}`);
+      if (data.logs) {
+        setActivityLogs(data.logs);
+      } else {
+        setActivityLogs([]);
+      }
+    } catch (e) {
+      alert("Failed to load activity");
+    } finally {
+      setLoadingActivity(false);
+    }
+  };
+
   const loadData = async () => {
     try {
       const data = await fetchApi('/dev/admin');
       if (data.users) setUsers(data.users);
     } catch (err: any) {
       if (err.message === "Unauthorized") {
-          router.push('/dev/login');
+        router.push('/dev/login');
       }
       setErrorMsg("Failed to load developers");
     } finally {
@@ -96,16 +119,16 @@ export default function DevAdmin() {
             <p className="text-neutral-400 text-sm">Register and manage developer accesses.</p>
           </div>
           <Link href="/dev/dashboard" className="px-5 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-sm transition-colors flex items-center gap-2">
-             Back to Dashboard
+            Back to Dashboard
           </Link>
         </header>
 
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 animate-[fadeUp_0.6s_ease-out_0.1s_forwards] opacity-0">
-          
+
           <div className="lg:col-span-1">
             <div className="bg-[#111111]/80 backdrop-blur-2xl border border-white/10 rounded-2xl p-6 shadow-2xl">
               <h2 className="text-xl font-semibold mb-6 pb-4 border-b border-white/10">Authorize New Operator</h2>
-              
+
               <form className="space-y-4" onSubmit={handleRegister}>
                 <div>
                   <label className="block text-[10px] font-semibold text-neutral-500 uppercase tracking-wider mb-2">Username</label>
@@ -135,9 +158,9 @@ export default function DevAdmin() {
               <div className="p-6 border-b border-white/10">
                 <h2 className="text-xl font-semibold">Active Operators</h2>
               </div>
-              
+
               {loading ? (
-                 <div className="p-12 text-center text-neutral-500">Loading registry...</div>
+                <div className="p-12 text-center text-neutral-500">Loading registry...</div>
               ) : (
                 <div className="overflow-x-auto">
                   <table className="w-full text-left text-sm whitespace-nowrap">
@@ -162,6 +185,9 @@ export default function DevAdmin() {
                             )}
                           </td>
                           <td className="px-6 py-4 text-right">
+                            <button onClick={() => handleViewActivity(u.id)} className="px-3 py-1 bg-blue-500/20 hover:bg-blue-500/30 text-blue-400 rounded text-xs mr-2 transition-colors">
+                              Activity
+                            </button>
                             {u.is_blocked && (
                               <button onClick={() => handleUnblock(u.id)} className="px-3 py-1 bg-white/10 hover:bg-white/20 rounded text-xs mr-2 transition-colors">
                                 Unblock
@@ -179,10 +205,68 @@ export default function DevAdmin() {
               )}
             </div>
           </div>
-
         </div>
 
       </div>
+
+      {/* Activity Modal */}
+      {activityModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm animate-[fadeIn_0.2s_ease-out]">
+          <div className="bg-[#111] border border-white/10 rounded-2xl w-full max-w-4xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]">
+            <div className="p-6 border-b border-white/10 flex justify-between items-center bg-[#151515]">
+              <div>
+                <h2 className="text-xl font-semibold text-white">Developer Activity Log</h2>
+                <p className="text-sm text-neutral-400 mt-1">Reviewing actions for Operator #{activeDevId}</p>
+              </div>
+              <button onClick={() => setActivityModalOpen(false)} className="p-2 hover:bg-white/10 rounded-full transition-colors">
+                <svg className="w-5 h-5 text-neutral-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+              </button>
+            </div>
+
+            <div className="p-6 overflow-y-auto flex-grow">
+              {loadingActivity ? (
+                <div className="flex flex-col items-center justify-center py-20 text-neutral-500">
+                  <div className="w-8 h-8 border-2 border-white/10 border-t-blue-500 rounded-full animate-spin mb-4"></div>
+                  <p className="text-sm font-mono tracking-widest uppercase">Fetching Records...</p>
+                </div>
+              ) : activityLogs.length === 0 ? (
+                <div className="text-center py-20 text-neutral-500 bg-white/[0.02] rounded-xl border border-white/5">
+                  No activity recorded for this operator.
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {activityLogs.map((log) => (
+                    <div key={log.id} className="bg-white/[0.03] border border-white/10 p-4 rounded-xl hover:border-white/20 transition-colors">
+                      <div className="flex justify-between items-start mb-3">
+                        <span className={`px-2.5 py-1 text-[10px] uppercase tracking-wider font-bold rounded ${log.action.includes('INTRUDER') ? 'bg-red-500/20 text-red-400' : 'bg-blue-500/20 text-blue-400'}`}>
+                          {log.action}
+                        </span>
+                        <span className="text-xs font-mono text-neutral-500">
+                          {new Date(log.time).toLocaleString()}
+                        </span>
+                      </div>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm mt-4 pt-4 border-t border-white/5">
+                        <div>
+                          <p className="text-[10px] uppercase text-neutral-500 tracking-wider mb-1">Network IP</p>
+                          <p className="font-mono text-neutral-300">{log.ip_address}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] uppercase text-neutral-500 tracking-wider mb-1">Location</p>
+                          <p className="text-neutral-300">{log.location}</p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] uppercase text-neutral-500 tracking-wider mb-1">Device Signature</p>
+                          <p className="text-neutral-300 truncate" title={log.device}>{log.device}</p>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

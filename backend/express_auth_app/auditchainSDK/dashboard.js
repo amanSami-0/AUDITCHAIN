@@ -76,6 +76,10 @@ router.get("/", async (req, res) => {
         limit: 100
     });
 
+    if (req.accepts('json')) {
+        return res.json({ logs });
+    }
+
     res.render(path.join(__dirname, "views", "auditDashboard"), {
         logs,
         user_id

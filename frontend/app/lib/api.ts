@@ -10,6 +10,7 @@ export const fetchApi = async (endpoint: string, options: RequestInit = {}) => {
   const defaultOptions: RequestInit = {
     headers: {
       'Content-Type': 'application/json',
+      'Accept': 'application/json',
     },
   };
 
@@ -33,12 +34,20 @@ export const fetchApi = async (endpoint: string, options: RequestInit = {}) => {
     }
     
     if (!res.ok) {
-        throw new Error(data?.error || `API returned status: ${res.status}`);
+        const errorMessage = data?.error || data?.message || `API Error (Status ${res.status})`;
+        console.error(`[fetchApi] Error ${res.status} on ${url}:`, data);
+        throw new Error(errorMessage);
     }
     
     return data;
-  } catch (err) {
-    console.error(`API Error for ${url}:`, err);
+  } catch (err: any) {
+    console.error(`[fetchApi] Network or Parse Error for ${url}:`, err);
+    
+    // Check if it's a TypeError (usually failed to fetch / network error)
+    if (err instanceof TypeError && err.message === 'Failed to fetch') {
+      console.error(`[fetchApi] CORS or Server Connection Failed at ${url}. Ensure both backends (3000 & 4000) are running.`);
+    }
+
     throw err;
   }
 };

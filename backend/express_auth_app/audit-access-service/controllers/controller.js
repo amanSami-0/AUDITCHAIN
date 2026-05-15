@@ -5,6 +5,35 @@ const DeveloperActivity = require("../models/DeveloperActivity");
 const jwt = require("jsonwebtoken");
 const { v4: uuidv4 } = require("uuid");
 
+// SSE Clients
+let clients = [];
+
+const broadcastUpdate = () => {
+    clients.forEach(client => client.res.write("data: update\n\n"));
+};
+
+// =====================
+// REALTIME EVENTS (SSE)
+// =====================
+exports.events = (req, res) => {
+    res.setHeader("Content-Type", "text/event-stream");
+    res.setHeader("Cache-Control", "no-cache");
+    res.setHeader("Connection", "keep-alive");
+    res.flushHeaders();
+
+    const clientId = Date.now();
+    const newClient = { id: clientId, res };
+    clients.push(newClient);
+
+    console.log(`[SSE] Client ${clientId} connected`);
+
+    req.on("close", () => {
+        clients = clients.filter(c => c.id !== clientId);
+        console.log(`[SSE] Client ${clientId} disconnected`);
+    });
+};
+
+
 // =====================
 // LOGIN (FIXED)
 // =====================
@@ -13,9 +42,13 @@ exports.login = async (req, res) => {
         const { username, password } = req.body;
 
         const user = await Developer.findOne({ where: { username } });
-        if (!user) return res.redirect("/login");
+        if (!user) {
+            if (req.accepts('json')) return res.status(401).json({ error: "Invalid credentials" });
+            return res.redirect("/login");
+        }
 
         if (user.is_blocked) {
+            if (req.accepts('json')) return res.status(403).json({ error: "Account blocked" });
             return res.send("🚫 Account blocked");
         }
 
@@ -25,6 +58,7 @@ exports.login = async (req, res) => {
             user.attempts += 1;
             if (user.attempts >= 3) user.is_blocked = true;
             await user.save();
+            if (req.accepts('json')) return res.status(401).json({ error: "Invalid credentials" });
             return res.redirect("/login");
         }
 
@@ -54,7 +88,7 @@ exports.login = async (req, res) => {
 );
 
         // 🔥 SET COOKIES (CONSISTENT)
-        res.cookie("token", jwtToken, {
+        res.cookie("audit_token", jwtToken, {
             httpOnly: true,
             sameSite: "lax",
             path: "/"
@@ -73,10 +107,14 @@ exports.login = async (req, res) => {
         });
 
         // 🔥 SMALL DELAY FIX (prevents race)
+        if (req.accepts('json')) {
+            return res.json({ success: true });
+        }
         return res.redirect("http://localhost:3000/audit");
 
     } catch (err) {
         console.error(err);
+        if (req.accepts('json')) return res.status(500).json({ error: "Server error" });
         res.redirect("/login");
     }
 };
@@ -89,12 +127,14 @@ exports.register = async (req, res) => {
         const { username, email, dob, password } = req.body;
 
         if (!username || !email || !dob || !password) {
+            if (req.accepts('json')) return res.status(400).json({ error: "Missing fields" });
             return res.redirect("/admin");
         }
 
         const existing = await Developer.findOne({ where: { username } });
 
         if (existing) {
+            if (req.accepts('json')) return res.status(400).json({ error: "Username taken" });
             return res.redirect("/admin");
         }
 
@@ -109,9 +149,11 @@ exports.register = async (req, res) => {
             is_blocked: false
         });
 
+        if (req.accepts('json')) return res.json({ success: true });
         res.redirect("/admin");
 
     } catch (err) {
+        if (req.accepts('json')) return res.status(500).json({ error: "Server error" });
         res.redirect("/admin");
     }
 };
@@ -140,7 +182,7 @@ exports.logout = async (req, res) => {
         }
 
         // 🔥 CLEAR ALL AUTH COOKIES
-        res.clearCookie("token", {
+        res.clearCookie("audit_token", {
             httpOnly: true,
             sameSite: "lax",
             path: "/"
@@ -158,12 +200,14 @@ exports.logout = async (req, res) => {
             path: "/"
         });
 
+        if (req.accepts('json')) return res.json({ success: true });
         return res.redirect("/login");
 
     } catch (err) {
 
         console.log("Logout error:", err.message);
 
+        if (req.accepts('json')) return res.status(500).json({ error: "Server error" });
         return res.redirect("/login");
     }
 };
@@ -175,6 +219,10 @@ exports.admin = async (req, res) => {
     const users = await Developer.findAll({
         order: [["id", "ASC"]]
     });
+
+    if (req.accepts('json')) {
+        return res.json({ users });
+    }
 
     res.render("admin", {
         users,
@@ -207,6 +255,7 @@ exports.banDeveloper = async (req, res) => {
         }
     );
 
+    if (req.accepts('json')) return res.json({ success: true });
     res.redirect("/admin");
 };
 // =====================
@@ -222,6 +271,7 @@ exports.unblock = async (req, res) => {
         await user.save();
     }
 
+    if (req.accepts('json')) return res.json({ success: true });
     res.redirect("/admin");
 };
 
@@ -249,10 +299,12 @@ exports.updateDeveloper = async (req, res) => {
 
         await user.save();
 
+        if (req.accepts('json')) return res.json({ success: true });
         res.redirect("/admin");
 
     } catch (err) {
         console.error("Update error:", err);
+        if (req.accepts('json')) return res.status(500).json({ error: "Server error" });
         res.redirect("/admin");
     }
 };
@@ -283,6 +335,7 @@ exports.deleteDeveloper = async (req, res) => {
     await AccessLog.destroy({ where: { developer_id: developerId } });
     await user.destroy();
 
+    if (req.accepts('json')) return res.json({ success: true });
     res.redirect("/admin");
 };
 
@@ -312,22 +365,29 @@ exports.accessLogs = async (req, res) => {
         const userMap = {};
         users.forEach(u => userMap[u.id] = u.username);
 
-res.render("accessLogs", {
-    logs,
-    userMap,
-    developer_id: developer_id || "",
-    success: null,
-    error: null
-});
+        if (req.accepts('json')) {
+            return res.json({ logs, userMap, developer_id: developer_id || "" });
+        }
+
+        res.render("accessLogs", {
+            logs,
+            userMap,
+            developer_id: developer_id || "",
+            success: null,
+            error: null
+        });
     } catch (err) {
         console.error(err);
+        if (req.accepts('json')) {
+            return res.json({ logs: [], userMap: {}, developer_id: "" });
+        }
       res.render("accessLogs", {
-    logs: [],
-    userMap: {},
-    developer_id: "",
-    success: null,
-    error: null
-});
+            logs: [],
+            userMap: {},
+            developer_id: "",
+            success: null,
+            error: null
+        });
     }
 };
 
@@ -377,10 +437,12 @@ exports.kickUser = async (req, res) => {
             );
         }
 
+        if (req.accepts('json')) return res.json({ success: true });
         res.redirect("/access-logs");
 
     } catch (err) {
         console.error("Kick error:", err);
+        if (req.accepts('json')) return res.status(500).json({ error: "Server error" });
         res.redirect("/access-logs");
     }
 };
@@ -461,6 +523,8 @@ exports.viewDeveloperActivity = async (req, res) => {
         where: { developer_id: req.params.id },
         order: [["time", "DESC"]]
     });
+
+    if (req.accepts('json')) return res.json({ logs });
 
     res.render("developerActivity", { logs });
 };
@@ -700,10 +764,21 @@ if (
             logout_time: new Date()
         });
 
+        // 🔥 TRIGGER FRONTEND REFRESH
+        broadcastUpdate();
+
         res.json({ success: true });
 
     } catch (err) {
         console.error("Intruder log error:", err);
         res.json({ success: false });
     }
+};
+
+// =====================
+// DASHBOARD
+// =====================
+exports.dashboard = async (req, res) => {
+    if (req.accepts('json')) return res.json({ success: true });
+    res.redirect("/admin");
 };

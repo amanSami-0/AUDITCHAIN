@@ -1,0 +1,122 @@
+Project Structure: AUDITCHAIN
+========================================
+├── README.md
+├── all_project_code.txt
+├── frontend/
+│   ├── README.md
+│   ├── eslint.config.mjs
+│   ├── middleware.ts
+│   ├── next-env.d.ts
+│   ├── next.config.ts
+│   ├── package-lock.json
+│   ├── package.json
+│   ├── postcss.config.mjs
+│   ├── tsconfig.json
+│   ├── app/
+│   │   ├── favicon.ico
+│   │   ├── globals.css
+│   │   ├── layout.tsx
+│   │   ├── page.tsx
+│   │   ├── settings/
+│   │   │   ├── page.tsx
+│   │   ├── hashes/
+│   │   │   ├── page.tsx
+│   │   ├── update/
+│   │   │   ├── page.tsx
+│   │   ├── signup/
+│   │   │   ├── page.tsx
+│   │   ├── audit/
+│   │   │   ├── page.tsx
+│   │   ├── profile/
+│   │   │   ├── page.tsx
+│   │   ├── lib/
+│   │   │   ├── api.ts
+│   │   ├── api/
+│   │   │   ├── auth/
+│   │   │   │   ├── [...nextauth]/
+│   │   │   │   │   ├── route.ts
+│   │   ├── dev/
+│   │   │   ├── signup/
+│   │   │   │   ├── page.tsx
+│   │   │   ├── admin/
+│   │   │   │   ├── page.tsx
+│   │   │   ├── dashboard/
+│   │   │   │   ├── page.tsx
+│   │   │   ├── access-logs/
+│   │   │   │   ├── page.tsx
+│   │   │   ├── login/
+│   │   │   │   ├── page.tsx
+│   │   ├── forgot/
+│   │   │   ├── page.tsx
+│   │   ├── login/
+│   │   │   ├── page.tsx
+│   ├── public/
+│   │   ├── file.svg
+│   │   ├── globe.svg
+│   │   ├── next.svg
+│   │   ├── vercel.svg
+│   │   ├── window.svg
+├── backend/
+│   ├── express_auth_app/
+│   │   ├── app.js
+│   │   ├── audit.db
+│   │   ├── audit.sqlite
+│   │   ├── database.sqlite
+│   │   ├── package-lock.json
+│   │   ├── package.json
+│   │   ├── middleware/
+│   │   │   ├── authMiddleware.js
+│   │   ├── auditchainSDK/
+│   │   │   ├── auditLogger.js
+│   │   │   ├── dashboard.js
+│   │   │   ├── database.js
+│   │   │   ├── hash.js
+│   │   │   ├── index.js
+│   │   │   ├── middleware.js
+│   │   │   ├── models/
+│   │   │   │   ├── AuditLog.js
+│   │   │   │   ├── LoginAttempt.js
+│   │   │   ├── views/
+│   │   │   │   ├── auditDashboard.ejs
+│   │   ├── audit-access-service/
+│   │   │   ├── app.js
+│   │   │   ├── audit_access.sqlite
+│   │   │   ├── debug_db.js
+│   │   │   ├── package-lock.json
+│   │   │   ├── package.json
+│   │   │   ├── config/
+│   │   │   │   ├── db.js
+│   │   │   ├── models/
+│   │   │   │   ├── AccessLog.js
+│   │   │   │   ├── Developer.js
+│   │   │   ├── controllers/
+│   │   │   │   ├── controller.js
+│   │   │   ├── views/
+│   │   │   │   ├── accessLogs.ejs
+│   │   │   │   ├── admin.ejs
+│   │   │   │   ├── dashboard.ejs
+│   │   │   │   ├── login.ejs
+│   │   │   ├── routes/
+│   │   │   │   ├── routes.js
+│   │   ├── config/
+│   │   │   ├── db.js
+│   │   ├── utils/
+│   │   │   ├── password.js
+│   │   ├── models/
+│   │   │   ├── User.js
+│   │   ├── public/
+│   │   │   ├── css/
+│   │   │   │   ├── style.css
+│   │   ├── controllers/
+│   │   │   ├── authController.js
+│   │   ├── views/
+│   │   │   ├── delete.ejs
+│   │   │   ├── forgot.ejs
+│   │   │   ├── login.ejs
+│   │   │   ├── profile.ejs
+│   │   │   ├── signup.ejs
+│   │   │   ├── update.ejs
+│   │   │   ├── layouts/
+│   │   │   │   ├── main.ejs
+│   │   ├── routes/
+│   │   │   ├── authRoutes.js

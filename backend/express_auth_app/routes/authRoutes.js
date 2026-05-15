@@ -23,6 +23,10 @@ router.post("/delete", authUser, authController.deleteAccount);
 
 router.get("/forgot", authController.forgotPage);
 router.post("/forgot", authController.forgotPassword);
-router.get("/logout",authController.logout);
+
+router.post("/settings", authUser, authController.updateSettings);
+
+router.get("/logout", authController.logout);
+router.post("/logout", authController.logout);
 
 module.exports = router;

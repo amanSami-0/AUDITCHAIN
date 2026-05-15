@@ -24,7 +24,8 @@ async function getAuditLogs() {
     const res = await fetch(apiUrl, {
       cache: 'no-store',
       headers: {
-        'Cookie': cookie
+        'Cookie': cookie,
+        'Accept': 'application/json'
       }
     });
     
@@ -91,7 +92,7 @@ export default async function HashesPage() {
           <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6 relative">
             
             {sortedLogs.map((log, index) => {
-              const isGenesis = log.previous_hash === '0';
+              const isGenesis = log.previous_hash === 'GENESIS';
               const isLatest = index === sortedLogs.length - 1;
               const dateObj = new Date(log.timestamp);
               const isValidDate = !isNaN(dateObj.getTime());

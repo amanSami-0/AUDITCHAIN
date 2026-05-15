@@ -26,7 +26,11 @@ exports.forgotPage = (req, res) => res.render("forgot");
 
 exports.profile = async (req, res) => {
     const user = await User.findByPk(req.user.id);
-    res.render("profile", { user });
+    if (req.accepts('json')) {
+        res.json({ user });
+    } else {
+        res.render("profile", { user });
+    }
 };
 
 exports.updatePage = async (req, res) => {
@@ -47,18 +51,21 @@ exports.signup = async (req, res) => {
 
         if (!username || !email || !password || !date_of_birth) {
             req.flash("error", "All fields required");
+            if (req.accepts('json')) return res.status(400).json({ error: "All fields required" });
             return res.redirect("/signup");
         }
 
         const existingEmail = await User.findOne({ where: { email } });
         if (existingEmail) {
             req.flash("error", "Email already exists");
+            if (req.accepts('json')) return res.status(400).json({ error: "Email already exists" });
             return res.redirect("/signup");
         }
 
         const existingUsername = await User.findOne({ where: { username } });
         if (existingUsername) {
             req.flash("error", "Username taken");
+            if (req.accepts('json')) return res.status(400).json({ error: "Username taken" });
             return res.redirect("/signup");
         }
 
@@ -78,11 +85,13 @@ exports.signup = async (req, res) => {
         await req.audit.logAction("SIGNUP", newUser.id);
 
         req.flash("success", "Account created");
+        if (req.accepts('json')) return res.json({ success: true, message: "Account created" });
         res.redirect("/login");
 
     } catch (err) {
         console.error("SIGNUP ERROR:", err);
         req.flash("error", "Something went wrong");
+        if (req.accepts('json')) return res.status(500).json({ error: "Something went wrong" });
         res.redirect("/signup");
     }
 };
@@ -106,6 +115,7 @@ exports.login = async (req, res) => {
         // 🚫 VALIDATION
         if (!email || !password) {
             req.flash("error", "Missing credentials");
+            if (req.accepts('json')) return res.status(400).json({ error: "Missing credentials" });
             return res.redirect("/login");
         }
 
@@ -116,6 +126,7 @@ exports.login = async (req, res) => {
 
         if (record?.blocked_until && new Date() < record.blocked_until) {
             req.flash("error", "Account blocked. Try after 10 minutes.");
+            if (req.accepts('json')) return res.status(403).json({ error: "Account blocked. Try after 10 minutes." });
             return res.redirect("/login");
         }
 
@@ -128,10 +139,12 @@ exports.login = async (req, res) => {
 
             if (result.blocked) {
                 req.flash("error", "Too many attempts. Account blocked.");
+                if (req.accepts('json')) return res.status(403).json({ error: "Too many attempts. Account blocked." });
                 return res.redirect("/login");
             }
 
             req.flash("error", "User not found");
+            if (req.accepts('json')) return res.status(401).json({ error: "User not found" });
             return res.redirect("/login");
         }
 
@@ -144,10 +157,12 @@ exports.login = async (req, res) => {
 
             if (result.blocked) {
                 req.flash("error", "Too many attempts. Account blocked.");
+                if (req.accepts('json')) return res.status(403).json({ error: "Too many attempts. Account blocked." });
                 return res.redirect("/login");
             }
 
             req.flash("error", "Incorrect password");
+            if (req.accepts('json')) return res.status(401).json({ error: "Incorrect password" });
             return res.redirect("/login");
         }
 
@@ -160,13 +175,15 @@ exports.login = async (req, res) => {
             { expiresIn: "1h" }
         );
 
-        res.cookie("token", token);
+        res.cookie("auth_token", token);
+        if (req.accepts('json')) return res.json({ success: true, token });
 
         res.redirect("/profile");
 
     } catch (err) {
         console.error("LOGIN ERROR:", err);
         req.flash("error", "Something went wrong");
+        if (req.accepts('json')) return res.status(500).json({ error: "Something went wrong" });
         res.redirect("/login");
     }
 };
@@ -185,7 +202,36 @@ exports.update = async (req, res) => {
     await req.audit.logAction("UPDATE_PROFILE", user.id);
 
     req.flash("success", "Profile updated");
+    if (req.accepts('json')) return res.json({ success: true, message: "Profile updated" });
     res.redirect("/profile");
+};
+
+
+// =====================
+// SETTINGS
+// =====================
+
+exports.updateSettings = async (req, res) => {
+    try {
+        const user = await User.findByPk(req.user.id);
+        
+        // Settings are not currently stored in the DB columns,
+        // but we log the attempt to the ledger.
+        const settingKeys = Object.keys(req.body);
+        const attributeName = settingKeys.length > 0 ? settingKeys[0] : "settings";
+        
+        // Optional: Update user model if you add setting columns later
+        // await user.update(req.body);
+
+        await req.audit.logAction("UPDATE_SETTINGS", user.id);
+
+        if (req.accepts('json')) return res.json({ success: true, message: "Settings updated" });
+        res.redirect("/profile");
+    } catch (err) {
+        console.error("SETTINGS UPDATE ERROR:", err);
+        if (req.accepts('json')) return res.status(500).json({ error: "Failed to update settings" });
+        res.redirect("/profile");
+    }
 };
 
 
@@ -201,7 +247,8 @@ exports.deleteAccount = async (req, res) => {
 
     await req.audit.logAction("DELETE_ACCOUNT", user.id);
 
-    res.clearCookie("token");
+    res.clearCookie("auth_token");
+    if (req.accepts('json')) return res.json({ success: true, message: "Account deleted" });
 
     res.redirect("/signup");
 };
@@ -219,6 +266,7 @@ exports.forgotPassword = async (req, res) => {
 
     if (!user) {
         req.flash("error", "User not found");
+        if (req.accepts('json')) return res.status(404).json({ error: "User not found" });
         return res.redirect("/forgot");
     }
 
@@ -228,6 +276,7 @@ exports.forgotPassword = async (req, res) => {
     await req.audit.logAction("PASSWORD_RESET", user.id);
 
     req.flash("success", "Password updated");
+    if (req.accepts('json')) return res.json({ success: true, message: "Password updated" });
     res.redirect("/login");
 };
 
@@ -244,11 +293,13 @@ exports.logout = async (req, res) => {
             await req.audit.logAction("LOGOUT", req.user.id);
         }
 
-        res.clearCookie("token");
+        res.clearCookie("auth_token");
+        if (req.accepts('json')) return res.json({ success: true, message: "Logged out" });
 
         res.redirect("/login");
 
     } catch (err) {
+        if (req.accepts('json')) return res.status(500).json({ error: "Logout failed" });
         res.redirect("/login");
     }
 };
