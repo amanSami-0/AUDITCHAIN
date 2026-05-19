@@ -136,16 +136,56 @@ app.use("/", routes);
 
 // =====================
 // 🗄 DATABASE + SERVER
-// =====================
-sequelize.sync()
-.then(() => {
-    console.log("✅ Database connected");
-})
-.catch(err => {
-    console.error("❌ DB Error:", err);
-})
-.finally(() => {
-    app.listen(4000, () => {
-        console.log("🚀 Audit Access Service running at http://localhost:4000/admin");
+let devPortalReady = null;
+let devPortalServer = null;
+
+async function startDevPortal(port = 4000) {
+    if (devPortalServer) {
+        return devPortalServer;
+    }
+
+    if (!devPortalReady) {
+        devPortalReady = (async () => {
+            await sequelize.sync();
+            console.log("✅ Dev portal database connected");
+            // auditLogger is initialized by the main app (shared chain + audit.sqlite)
+        })();
+    }
+    await devPortalReady;
+
+    return new Promise((resolve, reject) => {
+        const server = app.listen(port, () => {
+            devPortalServer = server;
+            console.log(`🚀 Audit Access Service running at http://localhost:${port}/admin`);
+            resolve(server);
+        });
+
+        server.on("error", (err) => {
+            if (err.code === "EADDRINUSE") {
+                console.warn(
+                    `⚠️  Port ${port} is already in use (dev portal may already be running). ` +
+                        `Main API will still start on 3005. To free the port: lsof -ti :${port} | xargs kill`
+                );
+                resolve(null);
+                return;
+            }
+            reject(err);
+        });
     });
-});
+}
+
+module.exports = { app, startDevPortal };
+
+if (require.main === module) {
+    startDevPortal(4000)
+        .then((server) => {
+            if (!server) {
+                console.error("❌ Port 4000 is in use. Stop the other process first.");
+                process.exit(1);
+            }
+        })
+        .catch((err) => {
+            console.error("❌ Dev portal startup error:", err);
+            process.exit(1);
+        });
+}

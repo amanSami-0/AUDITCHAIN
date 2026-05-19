@@ -6,21 +6,28 @@ import Link from "next/link";
 import { UAParser } from "ua-parser-js";
 
 interface AuditLog {
-  id: number;
+  id: number | string;
   user_id: number;
   action: string;
   attribute_name: string;
+  location?: string;
   ip_address: string;
   user_agent: string;
   previous_hash: string;
   current_hash: string;
+  chain_hash?: string;
+  block_number?: string;
+  on_chain?: boolean;
   createdAt: string;
+  timestamp?: string;
 }
 
 interface AggregatedAuditLog extends Omit<AuditLog, 'attribute_name' | 'id'> {
   id: string;
   attributes: string[];
   count: number;
+  on_chain?: boolean;
+  block_number?: string;
 }
 
 export default function AuditLogs() {
@@ -36,7 +43,10 @@ export default function AuditLogs() {
     try {
       const data = await fetchApi('/audit/verify');
       if (data.valid) {
-        setVerifyMessage({ text: "Cryptographic Chain Verified. No tampering detected.", isError: false });
+        setVerifyMessage({
+          text: data.message || "Parachain ledger verified. SQLite buffer is clear.",
+          isError: false,
+        });
       } else {
         setVerifyMessage({ text: data.error || "Tampering Detected!", isError: true });
       }
@@ -65,7 +75,7 @@ export default function AuditLogs() {
             aggregated.push({
               ...log,
               id: log.id.toString(),
-              attributes: log.attribute_name ? [log.attribute_name] : [],
+              attributes: (log.location && log.location !== '—') ? [log.location] : (log.attribute_name ? [log.attribute_name] : []),
               count: 1
             });
             return;
@@ -79,14 +89,15 @@ export default function AuditLogs() {
 
           if (isSameAction && isSameUser && isWithin15Mins) {
             lastGroup.count += 1;
-            if (log.attribute_name && !lastGroup.attributes.includes(log.attribute_name)) {
-              lastGroup.attributes.push(log.attribute_name);
+            const attr = log.location || log.attribute_name;
+            if (attr && attr !== '—' && !lastGroup.attributes.includes(attr)) {
+              lastGroup.attributes.push(attr);
             }
           } else {
             aggregated.push({
               ...log,
               id: log.id.toString(),
-              attributes: log.attribute_name ? [log.attribute_name] : [],
+              attributes: (log.location && log.location !== '—') ? [log.location] : (log.attribute_name ? [log.attribute_name] : []),
               count: 1
             });
           }
@@ -280,6 +291,7 @@ export default function AuditLogs() {
                       <th className="px-6 py-5">Action</th>
                       <th className="px-6 py-5">Origin User ID</th>
                       <th className="px-6 py-5">Attribute(s) Modified</th>
+                      <th className="px-6 py-5">Chain</th>
                       <th className="px-6 py-5 rounded-tr-2xl">Device OS & Browser</th>
                     </tr>
                   </thead>
@@ -337,6 +349,12 @@ export default function AuditLogs() {
                                 </span>
                               )}
                             </div>
+                          </td>
+
+                          <td className="px-6 py-4">
+                            <span className={`text-[10px] font-mono uppercase tracking-wider ${log.on_chain ? 'text-emerald-400' : 'text-amber-400'}`}>
+                              {log.on_chain ? `Block ${log.block_number}` : 'Buffer'}
+                            </span>
                           </td>
 
                           {/* Fingerprint */}

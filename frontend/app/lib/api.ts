@@ -34,7 +34,14 @@ export const fetchApi = async (endpoint: string, options: RequestInit = {}) => {
     }
     
     if (!res.ok) {
-        const errorMessage = data?.error || data?.message || `API Error (Status ${res.status})`;
+        let errorMessage = data?.error || data?.message;
+        if (!errorMessage && res.status === 500 && endpoint.startsWith('/dev/')) {
+            errorMessage =
+                'Dev portal API unreachable. Start the backend with: cd backend/express_auth_app && node app.js (needs ports 3005 and 4000).';
+        }
+        if (!errorMessage) {
+            errorMessage = `API Error (Status ${res.status})`;
+        }
         console.error(`[fetchApi] Error ${res.status} on ${url}:`, data);
         throw new Error(errorMessage);
     }

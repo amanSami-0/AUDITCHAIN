@@ -46,7 +46,9 @@ export default async function HashesPage() {
   
   // Sort logs to show oldest first (Genesis block at the top/beginning)
   const sortedLogs = [...logs].sort((a, b) => {
-    return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
+    const ta = new Date(a.timestamp || a.createdAt).getTime();
+    const tb = new Date(b.timestamp || b.createdAt).getTime();
+    return ta - tb;
   });
 
   return (
@@ -154,6 +156,9 @@ export default async function HashesPage() {
                       <div className="text-[9px] uppercase tracking-[0.2em] text-cyan-500/70 mb-2 pl-4 border-l-2 border-cyan-500/30 group-hover:border-cyan-400 transition-colors">CURR_HASH</div>
                       <div className="font-mono text-xs md:text-sm text-white break-all pl-4 border-l-2 border-cyan-500/30 group-hover:border-cyan-400 group-hover:text-cyan-50 shadow-[0_0_30px_rgba(34,211,238,0)] group-hover:shadow-[0_0_30px_rgba(34,211,238,0.1)] transition-all duration-300">
                         {log.current_hash}
+                        {log.chain_hash && (
+                          <span className="block text-[9px] text-cyan-500/60 mt-1">chain: {log.chain_hash}</span>
+                        )}
                       </div>
                     </div>
                   </div>

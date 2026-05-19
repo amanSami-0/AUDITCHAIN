@@ -4,6 +4,7 @@ const AccessLog = require("../models/AccessLog");
 const DeveloperActivity = require("../models/DeveloperActivity");
 const jwt = require("jsonwebtoken");
 const { v4: uuidv4 } = require("uuid");
+const auditLogger = require("../../auditchainSDK/auditLogger");
 
 // SSE Clients
 let clients = [];
@@ -149,6 +150,16 @@ exports.register = async (req, res) => {
             is_blocked: false
         });
 
+        await auditLogger.log({
+            action: "REGISTER_DEVELOPER",
+            user_id: req.user?.id || 1,
+            page: req.path,
+            method: req.method,
+            ip_address: req.headers["x-forwarded-for"] || req.socket?.remoteAddress || "UNKNOWN",
+            device: req.headers["user-agent"] || "UNKNOWN",
+            status: "SUCCESS"
+        });
+
         if (req.accepts('json')) return res.json({ success: true });
         res.redirect("/admin");
 
@@ -255,6 +266,16 @@ exports.banDeveloper = async (req, res) => {
         }
     );
 
+    await auditLogger.log({
+        action: "BAN_DEVELOPER",
+        user_id: req.user?.id || 1,
+        page: req.path,
+        method: req.method,
+        ip_address: req.headers["x-forwarded-for"] || req.socket?.remoteAddress || "UNKNOWN",
+        device: req.headers["user-agent"] || "UNKNOWN",
+        status: "BANNED"
+    });
+
     if (req.accepts('json')) return res.json({ success: true });
     res.redirect("/admin");
 };
@@ -270,6 +291,16 @@ exports.unblock = async (req, res) => {
         user.attempts = 0;
         await user.save();
     }
+
+    await auditLogger.log({
+        action: "UNBLOCK_DEVELOPER",
+        user_id: req.user?.id || 1,
+        page: req.path,
+        method: req.method,
+        ip_address: req.headers["x-forwarded-for"] || req.socket?.remoteAddress || "UNKNOWN",
+        device: req.headers["user-agent"] || "UNKNOWN",
+        status: "UNBLOCKED"
+    });
 
     if (req.accepts('json')) return res.json({ success: true });
     res.redirect("/admin");
@@ -298,6 +329,16 @@ exports.updateDeveloper = async (req, res) => {
         user.dob = req.body.dob || user.dob;
 
         await user.save();
+
+        await auditLogger.log({
+            action: "UPDATE_DEVELOPER",
+            user_id: req.user?.id || 1,
+            page: req.path,
+            method: req.method,
+            ip_address: req.headers["x-forwarded-for"] || req.socket?.remoteAddress || "UNKNOWN",
+            device: req.headers["user-agent"] || "UNKNOWN",
+            status: "UPDATED"
+        });
 
         if (req.accepts('json')) return res.json({ success: true });
         res.redirect("/admin");
@@ -334,6 +375,16 @@ exports.deleteDeveloper = async (req, res) => {
 
     await AccessLog.destroy({ where: { developer_id: developerId } });
     await user.destroy();
+
+    await auditLogger.log({
+        action: "DELETE_DEVELOPER",
+        user_id: req.user?.id || 1,
+        page: req.path,
+        method: req.method,
+        ip_address: req.headers["x-forwarded-for"] || req.socket?.remoteAddress || "UNKNOWN",
+        device: req.headers["user-agent"] || "UNKNOWN",
+        status: "DELETED"
+    });
 
     if (req.accepts('json')) return res.json({ success: true });
     res.redirect("/admin");
@@ -436,6 +487,16 @@ exports.kickUser = async (req, res) => {
                 }
             );
         }
+
+        await auditLogger.log({
+            action: "KICK_SESSION",
+            user_id: req.user?.id || 1,
+            page: req.path,
+            method: req.method,
+            ip_address: req.headers["x-forwarded-for"] || req.socket?.remoteAddress || "UNKNOWN",
+            device: req.headers["user-agent"] || "UNKNOWN",
+            status: "KICKED"
+        });
 
         if (req.accepts('json')) return res.json({ success: true });
         res.redirect("/access-logs");

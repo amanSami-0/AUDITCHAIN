@@ -1,4 +1,5 @@
 const { DataTypes } = require("sequelize");
+const geoip = require("geoip-lite");
 
 const MAX_ATTEMPTS = 5;
 const TIME_WINDOW = 5 * 60 * 1000;
@@ -27,6 +28,8 @@ module.exports = (sequelize, auditLogger) => {
                 "UNKNOWN";
 
             const device = req.headers["user-agent"] || "UNKNOWN";
+            const geo = geoip.lookup(ip);
+            const location = geo ? `${geo.country}, ${geo.city || "Unknown"}` : "Unknown";
 
             // =====================================
             // 🔥 FIXED AUDIT ROUTE SKIP
@@ -96,7 +99,7 @@ if (
         user_id: req.user?.id || null,
         ip_address: ip,
         device,
-        location: "Unknown",
+        location,
         status: "INFO"
     });
 }
@@ -115,7 +118,7 @@ if (
                         user_id: user_id || req.user?.id || null,
                         ip_address: ip,
                         device,
-                        location: "Unknown",
+                        location,
                         status: "SUCCESS"
                     });
                 },
@@ -160,7 +163,7 @@ if (
                             user_id,
                             ip_address: ip,
                             device,
-                            location: "Unknown",
+                            location,
                             status: "BLOCKED",
                             attempt_count: record.attempts
                         });
@@ -193,7 +196,7 @@ if (
                             user_id,
                             ip_address: ip,
                             device,
-                            location: "Unknown",
+                            location,
                             status,
                             attempt_count: record.attempts
                         });
@@ -214,7 +217,7 @@ if (
                         user_id,
                         ip_address: ip,
                         device,
-                        location: "Unknown",
+                        location,
                         status: "LOGGED_IN",
                         attempt_count: prevAttempts
                     });

@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+    <title>Access Logs</title>
+
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+        body {
+            background-color: #f5f6fa;
+        }
+
+        .table td {
+            vertical-align: middle;
+        }
+
+        /* 🔥 INTRUDER HIGHLIGHT */
+        tr.intruder {
+            background-color: #ffe6e6;
+        }
+    </style>
+
+</head>
+
+<body>
+
+<div class="container mt-5">
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>📊 Developer Access Logs</h2>
+
+        <a href="/admin" class="btn btn-secondary">
+            ⬅ Back to Admin
+        </a>
+    </div>
+
+    <div class="card mb-4 shadow-sm">
+
+        <div class="card-header bg-primary text-white">
+            Search Logs by Developer ID
+        </div>
+
+        <div class="card-body">
+
+            <form method="GET">
+
+                <div class="input-group">
+
+                    <input 
+                        type="number" 
+                        name="developer_id" 
+                        class="form-control" 
+                        placeholder="Enter Developer ID"
+                        value="<%= developer_id || '' %>"
+                    >
+
+                    <button class="btn btn-primary">Search</button>
+
+                    <a href="/access-logs" class="btn btn-secondary">
+                        Reset
+                    </a>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+    <% if (error) { %>
+    <script>
+        alert("<%= error %>");
+    </script>
+    <% } %>
+
+    <div class="card shadow-sm">
+
+        <div class="card-header bg-dark text-white">
+            Access Sessions
+        </div>
+
+        <div class="card-body">
+
+            <div class="table-responsive">
+
+                <table class="table table-bordered table-hover table-striped">
+
+                    <thead class="table-dark">
+                        <tr>
+                            <th>ID</th>
+                            <th>Developer</th>
+                            <th>IP</th>
+                            <th>Device</th>
+                            <th>Login Time</th>
+                            <th>Logout Time</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                            <th>Activity</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+
+                    <% if (logs.length === 0) { %>
+                        <tr>
+                            <td colspan="9" class="text-center text-danger">
+                                No logs found
+                            </td>
+                        </tr>
+                    <% } %>
+
+                    <% logs.forEach(log => { %>
+
+                    <tr class="<%= log.developer_id === null ? 'intruder' : '' %>">
+
+                        <td><%= log.id %></td>
+
+                        <td>
+                            <% if (log.developer_id === null) { %>
+                                🚨 Intruder
+                                <br>
+                                <small class="text-danger">Unauthorized Access</small>
+                            <% } else { %>
+                                <%= userMap[log.developer_id] || "Unknown" %>
+                                <br>
+                                <small class="text-muted">ID: <%= log.developer_id %></small>
+                            <% } %>
+                        </td>
+
+                        <td><%= log.ip_address || "Unknown" %></td>
+
+                        <td style="max-width:200px; word-break: break-word;">
+                            <%= log.device || "Unknown" %>
+                        </td>
+
+                        <td><%= log.login_time %></td>
+
+                        <td>
+                            <% if (log.logout_time) { %>
+                                <%= log.logout_time %>
+                            <% } else { %>
+                                <span class="text-muted">—</span>
+                            <% } %>
+                        </td>
+
+                        <td>
+                            <% if (!log.logout_time) { %>
+                                <span class="badge bg-success">Active</span>
+                            <% } else { %>
+                                <span class="badge bg-secondary">Logged Out</span>
+                            <% } %>
+                        </td>
+
+                        <td>
+                            <% if (!log.logout_time && log.developer_id !== null) { %>
+                                <a href="/kick/<%= log.session_id %>" 
+                                   class="btn btn-danger btn-sm"
+                                   onclick="return confirm('Kick this developer session?')">
+                                    Kick
+                                </a>
+                            <% } else { %>
+                                <span class="text-muted">—</span>
+                            <% } %>
+                        </td>
+
+                        <td>
+                            <% if (log.developer_id !== null) { %>
+                                <a href="/developer-activity/<%= log.developer_id %>" 
+                                   class="btn btn-primary btn-sm">
+                                   View Activity
+                                </a>
+                            <% } else { %>
+                                <span class="text-muted">—</span>
+                            <% } %>
+                        </td>
+
+                    </tr>
+
+                    <% }) %>
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>

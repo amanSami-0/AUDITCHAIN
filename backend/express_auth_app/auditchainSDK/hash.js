@@ -34,6 +34,9 @@ function generateHash(data) {
         attempt_count:
             data.attempt_count || 0,
 
+        timestamp:
+            data.timestamp || 0,
+
         previous_hash:
             data.previous_hash || "GENESIS"
     };

@@ -29,6 +29,11 @@ module.exports = (sequelize) => {
 
         previous_hash: DataTypes.STRING,
 
-        current_hash: DataTypes.STRING
+        current_hash: DataTypes.STRING,
+
+        chain_status: {
+            type: DataTypes.STRING,
+            defaultValue: "pending",
+        },
     });
 };

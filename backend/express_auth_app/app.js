@@ -367,9 +367,13 @@ async function startServer() {
         startRealtimeTamperMonitor();
 
         console.log("✅ Database Connected")
-        console.log("🚀 Server running at http://localhost:3000")
 
-        app.listen(3000)
+        const { startDevPortal } = require("./audit-access-service/app");
+        await startDevPortal(4000);
+
+        app.listen(3005, () => {
+            console.log("🚀 Server running at http://localhost:3005");
+        });
 
     } catch (err) {
         console.error("Startup Error:", err)

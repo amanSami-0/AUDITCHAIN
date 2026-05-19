@@ -1,0 +1,20 @@
+<%- include('layouts/main') %>
+
+<div class="card profile-card">
+
+<h2>Profile</h2>
+
+<p><b>Username:</b> <%= user.username %></p>
+<p><b>Email:</b> <%= user.email %></p>
+<p><b>DOB:</b> <%= user.date_of_birth %></p>
+<p><b>Age:</b> <%= user.age %></p>
+
+<div class="buttons">
+
+<a href="/update" class="btn btn-primary">Edit Details</a>
+<a href="/delete" class="btn btn-danger">Delete Account</a>
+<a href="/logout" class="btn btn-secondary">Logout</a>
+
+</div>
+
+</div>

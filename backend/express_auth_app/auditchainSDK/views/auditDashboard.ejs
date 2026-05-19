@@ -30,179 +30,82 @@
         </a>
     </div>
 
-    <h2 class="mb-4 text-center">🔐 Audit Logs Dashboard</h2>
+    <h2 class="mb-4 text-center">🔐 Audit Logs Dashboard (Blockchain)</h2>
 
     <!-- 🔍 SEARCH -->
     <form method="GET" action="/audit" class="mb-3">
-
         <div class="input-group">
-
-            <input type="number"
+            <input type="text"
                    name="user_id"
                    value="<%= user_id || '' %>"
                    class="form-control"
-                   placeholder="Enter User ID">
-
+                   placeholder="Enter User ID (Blockchain does not filter by this currently)">
             <button class="btn btn-primary">
                 Search
             </button>
-
             <a href="/audit" class="btn btn-secondary">
                 Reset
             </a>
-
         </div>
-
     </form>
 
     <!-- 🔥 ACTIONS -->
     <div class="mb-3 text-end">
-
         <a href="/audit/export<%= user_id ? '?user_id=' + user_id : '' %>"
            class="btn btn-success me-2">
             📁 Export Logs
         </a>
-
         <a href="/audit/verify?manual=true"
            class="btn btn-warning">
             Verify Logs
         </a>
-
     </div>
 
     <!-- 🔥 TABLE -->
     <table class="table table-bordered table-striped">
-
         <thead class="table-dark">
-
         <tr>
             <th>ID</th>
-            <th>User</th>
             <th>Action</th>
-            <th>Method</th>
-            <th>Page</th>
-            <th>IP</th>
-            <th>Location</th>
-            <th>Device</th>
-            <th>Status</th>
-            <th>Attempts</th>
-            <th>Visits</th>
+            <th>Quantity</th>
+            <th>Block Number</th>
             <th>Previous Hash</th>
             <th>Current Hash</th>
             <th>Time</th>
         </tr>
-
         </thead>
-
         <tbody>
-
         <% if (logs.length === 0) { %>
-
             <tr>
-                <td colspan="14" class="text-center text-danger">
-                    No logs found
+                <td colspan="7" class="text-center text-danger">
+                    No logs found on the blockchain
                 </td>
             </tr>
-
         <% } %>
 
         <% logs.forEach(log => { %>
-
         <tr>
-
             <td><%= log.id %></td>
-
-            <td><%= log.user_id || "-" %></td>
-
             <td>
-
-                <% if (log.page === "/login" && log.status === "VISIT") { %>
-
-                    —
-
-                <% } else { %>
-
-                    <span class="badge bg-primary">
-                        <%= log.action %>
-                    </span>
-
-                <% } %>
-
+                <span class="badge bg-primary">
+                    <%= log.action %>
+                </span>
             </td>
-
-            <td><%= log.method || "-" %></td>
-
-            <td><%= log.page %></td>
-
-            <td><%= log.ip_address %></td>
-
-            <td><%= log.location || "-" %></td>
-
-            <td style="max-width:200px; word-break: break-word;">
-                <%= log.device %>
-            </td>
-
-            <td>
-
-                <% if (log.status === "FAILED") { %>
-
-                    <span class="badge bg-danger">
-                        FAILED
-                    </span>
-
-                <% } else if (log.status === "SUSPICIOUS") { %>
-
-                    <span class="badge bg-warning text-dark">
-                        SUSPICIOUS
-                    </span>
-
-                <% } else if (log.status === "BLOCKED") { %>
-
-                    <span class="badge bg-dark">
-                        BLOCKED
-                    </span>
-
-                <% } else if (log.status === "LOGGED_IN") { %>
-
-                    <span class="badge bg-success">
-                        LOGGED IN
-                    </span>
-
-                <% } else { %>
-
-                    <span class="badge bg-secondary">
-                        <%= log.status %>
-                    </span>
-
-                <% } %>
-
-            </td>
-
-            <td><%= log.attempt_count || 0 %></td>
-
-            <td><%= log.visit_count || 1 %></td>
-
+            <td><%= log.quantity %></td>
+            <td><%= log.block_number %></td>
             <td class="hash">
-                <%= log.previous_hash %>
+                <%= log.previous_hash || "GENESIS" %>
             </td>
-
             <td class="hash">
                 <%= log.current_hash %>
             </td>
-
-            <td><%= log.createdAt %></td>
-
+            <td><%= log.timestamp %></td>
         </tr>
-
         <% }) %>
-
         </tbody>
-
     </table>
 
 </div>
-
-
 
 </body>
 </html>
