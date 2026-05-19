@@ -119,22 +119,38 @@ exports.init = async (sequelize) => {
         await api.isReady;
 
         const { data: balance } = await api.query.system.account(companyAccount.address);
-        if (balance.free.toBigInt() < 1000000000n) {
+        if (balance.free.toBigInt() < 1000000000000n) {
             console.log("💰 Funding company account from Alice...");
-            await api.tx.balances
-                .transferAllowDeath(companyAccount.address, 100000000000n)
-                .signAndSend(alice, { nonce: -1 })
-                .catch(err => console.log("⚠️ Funding skip:", err.message));
+            await new Promise((resolve) => {
+                api.tx.balances
+                    .transferAllowDeath(companyAccount.address, 1000000000000000n)
+                    .signAndSend(alice, (result) => {
+                        if (result.isFinalized) resolve();
+                        else if (result.isError) resolve();
+                    })
+                    .catch(err => {
+                        console.log("⚠️ Funding skip:", err.message);
+                        resolve();
+                    });
+            });
         }
 
         if (api.tx.auditChain && api.tx.auditChain.authorizeSubmitter) {
             const isAuthorized = await api.query.auditChain.authorizedSubmitters(companyAccount.address);
             if (!isAuthorized.valueOf()) {
                 console.log("🔐 Authorizing company account...");
-                await api.tx.sudo
-                    .sudo(api.tx.auditChain.authorizeSubmitter(companyAccount.address))
-                    .signAndSend(alice, { nonce: -1 })
-                    .catch(err => console.log("⚠️ Auth skip:", err.message));
+                await new Promise((resolve) => {
+                    api.tx.sudo
+                        .sudo(api.tx.auditChain.authorizeSubmitter(companyAccount.address))
+                        .signAndSend(alice, (result) => {
+                            if (result.isFinalized) resolve();
+                            else if (result.isError) resolve();
+                        })
+                        .catch(err => {
+                            console.log("⚠️ Auth skip:", err.message);
+                            resolve();
+                        });
+                });
             } else {
                 console.log("🔐 Company account already authorized on chain.");
             }
@@ -163,7 +179,9 @@ exports.flushPendingBuffer = async () => {
     }
 
     const pending = await auditLogModel.findAll({
-        where: { chain_status: 'pending' },
+        where: { 
+            chain_status: ['pending', 'offline', 'failed'] 
+        },
         order: [['id', 'ASC']],
     });
 

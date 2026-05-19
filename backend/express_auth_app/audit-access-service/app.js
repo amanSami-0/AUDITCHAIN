@@ -12,8 +12,8 @@ const app = express();
 // =====================
 // 🔧 VIEW ENGINEif (!user || (user.is_blocked && user.id !== 1)) {
 // =====================
-app.set("view engine", "ejs");
-app.set("views", path.join(__dirname, "views"));
+// app.set("view engine", "ejs");
+// app.set("views", path.join(__dirname, "views"));
 
 // =====================
 // 🔧 MIDDLEWARE
@@ -154,9 +154,9 @@ async function startDevPortal(port = 4000) {
     await devPortalReady;
 
     return new Promise((resolve, reject) => {
-        const server = app.listen(port, () => {
+        const server = app.listen(port, "127.0.0.1", () => {
             devPortalServer = server;
-            console.log(`🚀 Audit Access Service running at http://localhost:${port}/admin`);
+            console.log(`🚀 Audit Access Service running at http://127.0.0.1:${port}/admin`);
             resolve(server);
         });
 

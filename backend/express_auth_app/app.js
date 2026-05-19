@@ -85,10 +85,7 @@ function startRealtimeTamperMonitor() {
                         return;
                     }
 
-                    console.log(
-                        "⚠️ DATABASE FILE CHANGED"
-                    );
-
+                   
                     // =====================================
                     // FETCH LOGS
                     // =====================================
@@ -131,9 +128,7 @@ function startRealtimeTamperMonitor() {
                             logs[i].current_hash
                         ) {
 
-                            console.log(
-                                "🚨 REALTIME DB TAMPERING DETECTED"
-                            );
+                           
 
                             tamperAlreadyDetected = true;
 
@@ -148,9 +143,7 @@ function startRealtimeTamperMonitor() {
                                     }
                                 );
 
-                                console.log(
-                                    "🚨 DB TAMPER LOGGED"
-                                );
+                               
 
                             } catch (err) {
 
@@ -371,8 +364,8 @@ async function startServer() {
         const { startDevPortal } = require("./audit-access-service/app");
         await startDevPortal(4000);
 
-        app.listen(3005, () => {
-            console.log("🚀 Server running at http://localhost:3005");
+        app.listen(3005, "127.0.0.1", () => {
+            console.log("🚀 Server running at http://127.0.0.1:3005");
         });
 
     } catch (err) {

@@ -127,6 +127,16 @@ router.get("/verify", async (req, res) => {
     }
 });
 
+router.post("/flush-buffer", async (req, res) => {
+    try {
+        await auditLogger.flushPendingBuffer();
+        return res.json({ success: true, message: "Buffer flush triggered on backend." });
+    } catch (err) {
+        console.error("Flush error:", err);
+        return res.status(500).json({ success: false, error: "Failed to flush buffer." });
+    }
+});
+
 router.get("/logout", async (req, res) => {
     try {
         await axios.get("http://localhost:4000/logout", {

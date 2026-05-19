@@ -36,6 +36,8 @@ export default function AuditLogs() {
   const [errorMsg, setErrorMsg] = useState("");
   const [verifyMessage, setVerifyMessage] = useState<{ text: string; isError: boolean } | null>(null);
   const [verifying, setVerifying] = useState(false);
+  const [flushing, setFlushing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
 
   const handleVerify = async () => {
     setVerifying(true);
@@ -57,6 +59,24 @@ export default function AuditLogs() {
     }
   };
 
+  const handleFlushBuffer = async () => {
+    setFlushing(true);
+    setVerifyMessage(null);
+    try {
+      const res = await fetch('/api/audit/flush-buffer', { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        setVerifyMessage({ text: data.message, isError: false });
+      } else {
+        setVerifyMessage({ text: data.error || "Failed to flush buffer.", isError: true });
+      }
+    } catch (err: any) {
+      setVerifyMessage({ text: "Network error triggering flush.", isError: true });
+    } finally {
+      setFlushing(false);
+    }
+  };
+
   const handleExport = () => {
     window.location.href = "/api/audit/export";
   };
@@ -69,13 +89,27 @@ export default function AuditLogs() {
 
         // Aggregate Logs
         const aggregated: AggregatedAuditLog[] = [];
+        const processAction = (log: any) => {
+            let action = log.action || 'UNKNOWN';
+            let attr = null;
+            if (action.includes('->')) {
+                const parts = action.split('->');
+                action = parts[0].trim();
+                attr = parts[1].trim();
+            }
+            return { action, attr };
+        };
 
         rawLogs.forEach(log => {
+          const { action, attr } = processAction(log);
+          log.action = action;
+          const currentAttrs = Array.from(new Set([attr || log.page, log.status].filter(a => a && a !== 'INFO' && a !== 'SUCCESS')));
+
           if (aggregated.length === 0) {
             aggregated.push({
               ...log,
               id: log.id.toString(),
-              attributes: [log.page, log.status].filter(Boolean) as string[],
+              attributes: currentAttrs as string[],
               count: 1
             });
             return;
@@ -89,15 +123,16 @@ export default function AuditLogs() {
 
           if (isSameAction && isSameUser && isWithin15Mins) {
             lastGroup.count += 1;
-            const attr1 = log.page;
-            const attr2 = log.status;
-            if (attr1 && !lastGroup.attributes.includes(attr1)) lastGroup.attributes.push(attr1);
-            if (attr2 && attr2 !== 'INFO' && !lastGroup.attributes.includes(attr2)) lastGroup.attributes.push(attr2);
+            currentAttrs.forEach(a => {
+              if (!lastGroup.attributes.includes(a as string)) {
+                lastGroup.attributes.push(a as string);
+              }
+            });
           } else {
             aggregated.push({
               ...log,
               id: log.id.toString(),
-              attributes: [log.page, log.status].filter(Boolean) as string[],
+              attributes: currentAttrs as string[],
               count: 1
             });
           }
@@ -127,9 +162,24 @@ export default function AuditLogs() {
             const rawLogs: AuditLog[] = data.logs || [];
 
             const aggregated: AggregatedAuditLog[] = [];
+            const processAction = (log: any) => {
+                let action = log.action || 'UNKNOWN';
+                let attr = null;
+                if (action.includes('->')) {
+                    const parts = action.split('->');
+                    action = parts[0].trim();
+                    attr = parts[1].trim();
+                }
+                return { action, attr };
+            };
+
             rawLogs.forEach(log => {
+              const { action, attr } = processAction(log);
+              log.action = action;
+              const currentAttrs = Array.from(new Set([attr || log.page, log.status].filter(a => a && a !== 'INFO' && a !== 'SUCCESS')));
+
               if (aggregated.length === 0) {
-                aggregated.push({ ...log, id: log.id.toString(), attributes: [log.page, log.status].filter(Boolean) as string[], count: 1 });
+                aggregated.push({ ...log, id: log.id.toString(), attributes: currentAttrs as string[], count: 1 });
                 return;
               }
               const lastGroup = aggregated[aggregated.length - 1];
@@ -137,12 +187,14 @@ export default function AuditLogs() {
               const isSameAction = lastGroup.action === log.action;
               const isSameUser = lastGroup.user_id === log.user_id;
               const isWithin15Mins = timeDiff <= 15 * 60 * 1000;
+              
               if (isSameAction && isSameUser && isWithin15Mins) {
                 lastGroup.count += 1;
-                if (log.page && !lastGroup.attributes.includes(log.page)) lastGroup.attributes.push(log.page);
-                if (log.status && !lastGroup.attributes.includes(log.status)) lastGroup.attributes.push(log.status);
+                currentAttrs.forEach(a => {
+                  if (!lastGroup.attributes.includes(a as string)) lastGroup.attributes.push(a as string);
+                });
               } else {
-                aggregated.push({ ...log, id: log.id.toString(), attributes: [log.page, log.status].filter(Boolean) as string[], count: 1 });
+                aggregated.push({ ...log, id: log.id.toString(), attributes: currentAttrs as string[], count: 1 });
               }
             });
             setLogs(aggregated);
@@ -183,6 +235,11 @@ export default function AuditLogs() {
     }
   };
 
+  const filteredLogs = logs.filter(log => 
+    log.action.toLowerCase().includes(searchQuery.toLowerCase()) || 
+    log.attributes.some(attr => attr.toLowerCase().includes(searchQuery.toLowerCase()))
+  );
+
   return (
     <div className="relative min-h-screen w-full bg-[#0a0a0a] text-white selection:bg-white/20">
 
@@ -206,12 +263,34 @@ export default function AuditLogs() {
             <p className="text-neutral-400 text-sm">Immutable ledger of system events and entity modifications.</p>
           </div>
           <div>
-            <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap gap-3 items-center">
+              <div className="relative">
+                <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-neutral-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                </svg>
+                <input
+                  type="text"
+                  placeholder="Filter activity..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-9 pr-4 py-2 bg-white/5 border border-white/10 rounded-lg text-sm text-white placeholder-neutral-500 focus:outline-none focus:border-white/30 transition-all w-40 focus:w-56"
+                />
+              </div>
               <button onClick={handleExport} className="px-5 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-sm transition-colors backdrop-blur-md inline-flex items-center gap-2 text-neutral-300 hover:text-white">
                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
                 </svg>
                 Export CSV
+              </button>
+              <button onClick={handleFlushBuffer} disabled={flushing} className="px-5 py-2.5 bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/20 rounded-lg text-sm transition-colors backdrop-blur-md inline-flex items-center gap-2 text-purple-400 disabled:opacity-50 disabled:cursor-not-allowed">
+                {flushing ? (
+                  <div className="w-4 h-4 border-2 border-purple-400/30 border-t-purple-400 rounded-full animate-spin"></div>
+                ) : (
+                  <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                  </svg>
+                )}
+                Flush Buffer
               </button>
               <button onClick={handleVerify} disabled={verifying} className="px-5 py-2.5 bg-blue-500/10 hover:bg-blue-500/20 border border-blue-500/20 rounded-lg text-sm transition-colors backdrop-blur-md inline-flex items-center gap-2 text-blue-400 disabled:opacity-50 disabled:cursor-not-allowed">
                 {verifying ? (
@@ -273,7 +352,7 @@ export default function AuditLogs() {
               <div className="p-12 text-center text-red-400 bg-red-500/5">
                 <p className="font-mono">{errorMsg}</p>
               </div>
-            ) : logs.length === 0 ? (
+            ) : filteredLogs.length === 0 ? (
               <div className="p-32 text-center text-neutral-500">
                 <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mx-auto mb-6">
                   <svg className="w-8 h-8 opacity-50" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -297,7 +376,7 @@ export default function AuditLogs() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-white/[0.05]">
-                    {logs.map((log) => {
+                    {filteredLogs.map((log) => {
                       const dateObj = new Date(log.createdAt);
                       const formattedDate = dateObj.toLocaleDateString();
                       const formattedTime = dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
@@ -391,9 +470,9 @@ export default function AuditLogs() {
               </div>
             )}
 
-            {logs.length > 0 && (
+            {filteredLogs.length > 0 && (
               <div className="bg-[#121212] border-t border-white/10 p-5 flex flex-col md:flex-row justify-between items-center text-xs text-neutral-500 font-mono text-[10px] uppercase tracking-[0.1em]">
-                <span>Log Height: {logs.length} Actions</span>
+                <span>Log Height: {filteredLogs.length} Actions {searchQuery && '(Filtered)'}</span>
                 <span className="flex items-center gap-2 mt-2 md:mt-0 px-3 py-1 bg-white/5 border border-white/10 text-neutral-400 rounded-full">
                   <span className="relative flex h-2 w-2">
                     <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
