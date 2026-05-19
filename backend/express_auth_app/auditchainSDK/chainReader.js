@@ -28,7 +28,7 @@ async function fetchChainAuditLogs(api, companyAddress) {
     const hashKeys = new Set();
     const hashIndexEntries = await api.query.auditChain.hashIndex.entries();
     for (const [key, value] of hashIndexEntries) {
-        if (value.isSome) {
+        if (value) {
             const hex = normalizeHashHex(key.args[0]);
             if (hex) {
                 hashKeys.add(hex);
@@ -57,7 +57,7 @@ async function fetchChainAuditLogs(api, companyAddress) {
             const record = list[index];
             const human = record.toHuman?.() || record;
             const current_hash = normalizeHashHex(
-                record.hash?.toHex?.() || human.hash_ || human.hash
+                human.hash_ || human.hash || (record.get && record.get('hash') ? record.get('hash').toHex() : null)
             );
             const previous_hash = normalizeHashHex(human.previousHash) || 'GENESIS';
 

@@ -138,7 +138,7 @@ export default function DevAccessLogs() {
                           </td>
 
                           <td className="px-6 py-4 font-mono text-xs text-neutral-400">
-                            {log.ip_address}
+                            {log.ip_address === '::1' ? '127.0.0.1' : log.ip_address}
                           </td>
 
                           <td className="px-6 py-4 text-xs text-neutral-500">

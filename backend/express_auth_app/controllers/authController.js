@@ -199,7 +199,8 @@ exports.update = async (req, res) => {
 
     await user.update(req.body);
 
-    await req.audit.logAction("UPDATE_PROFILE", user.id);
+    const modifiedFields = Object.keys(req.body).map(k => k.charAt(0).toUpperCase() + k.slice(1)).join(", ");
+    await req.audit.logAction("Update Profile", user.id, modifiedFields);
 
     req.flash("success", "Profile updated");
     if (req.accepts('json')) return res.json({ success: true, message: "Profile updated" });
@@ -218,12 +219,12 @@ exports.updateSettings = async (req, res) => {
         // Settings are not currently stored in the DB columns,
         // but we log the attempt to the ledger.
         const settingKeys = Object.keys(req.body);
-        const attributeName = settingKeys.length > 0 ? settingKeys[0] : "settings";
+        const attributeName = settingKeys.length > 0 ? settingKeys.map(k => k.charAt(0).toUpperCase() + k.slice(1)).join(", ") : "Settings";
         
         // Optional: Update user model if you add setting columns later
         // await user.update(req.body);
 
-        await req.audit.logAction("UPDATE_SETTINGS", user.id);
+        await req.audit.logAction("Update Settings", user.id, attributeName);
 
         if (req.accepts('json')) return res.json({ success: true, message: "Settings updated" });
         res.redirect("/profile");

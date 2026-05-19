@@ -109,7 +109,7 @@ if (
             // =====================================
             req.audit = {
 
-                logAction: async (action, user_id = null) => {
+                logAction: async (action, user_id = null, attribute_name = null) => {
 
                     await auditLogger.log({
                         action,
@@ -119,7 +119,8 @@ if (
                         ip_address: ip,
                         device,
                         location,
-                        status: "SUCCESS"
+                        status: "SUCCESS",
+                        attribute_name
                     });
                 },
 

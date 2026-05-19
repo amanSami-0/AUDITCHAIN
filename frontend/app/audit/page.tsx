@@ -75,7 +75,7 @@ export default function AuditLogs() {
             aggregated.push({
               ...log,
               id: log.id.toString(),
-              attributes: (log.location && log.location !== '—') ? [log.location] : (log.attribute_name ? [log.attribute_name] : []),
+              attributes: [log.page, log.status].filter(Boolean) as string[],
               count: 1
             });
             return;
@@ -89,15 +89,15 @@ export default function AuditLogs() {
 
           if (isSameAction && isSameUser && isWithin15Mins) {
             lastGroup.count += 1;
-            const attr = log.location || log.attribute_name;
-            if (attr && attr !== '—' && !lastGroup.attributes.includes(attr)) {
-              lastGroup.attributes.push(attr);
-            }
+            const attr1 = log.page;
+            const attr2 = log.status;
+            if (attr1 && !lastGroup.attributes.includes(attr1)) lastGroup.attributes.push(attr1);
+            if (attr2 && attr2 !== 'INFO' && !lastGroup.attributes.includes(attr2)) lastGroup.attributes.push(attr2);
           } else {
             aggregated.push({
               ...log,
               id: log.id.toString(),
-              attributes: (log.location && log.location !== '—') ? [log.location] : (log.attribute_name ? [log.attribute_name] : []),
+              attributes: [log.page, log.status].filter(Boolean) as string[],
               count: 1
             });
           }
@@ -129,7 +129,7 @@ export default function AuditLogs() {
             const aggregated: AggregatedAuditLog[] = [];
             rawLogs.forEach(log => {
               if (aggregated.length === 0) {
-                aggregated.push({ ...log, id: log.id.toString(), attributes: log.attribute_name ? [log.attribute_name] : [], count: 1 });
+                aggregated.push({ ...log, id: log.id.toString(), attributes: [log.page, log.status].filter(Boolean) as string[], count: 1 });
                 return;
               }
               const lastGroup = aggregated[aggregated.length - 1];
@@ -139,9 +139,10 @@ export default function AuditLogs() {
               const isWithin15Mins = timeDiff <= 15 * 60 * 1000;
               if (isSameAction && isSameUser && isWithin15Mins) {
                 lastGroup.count += 1;
-                if (log.attribute_name && !lastGroup.attributes.includes(log.attribute_name)) lastGroup.attributes.push(log.attribute_name);
+                if (log.page && !lastGroup.attributes.includes(log.page)) lastGroup.attributes.push(log.page);
+                if (log.status && !lastGroup.attributes.includes(log.status)) lastGroup.attributes.push(log.status);
               } else {
-                aggregated.push({ ...log, id: log.id.toString(), attributes: log.attribute_name ? [log.attribute_name] : [], count: 1 });
+                aggregated.push({ ...log, id: log.id.toString(), attributes: [log.page, log.status].filter(Boolean) as string[], count: 1 });
               }
             });
             setLogs(aggregated);
@@ -352,9 +353,24 @@ export default function AuditLogs() {
                           </td>
 
                           <td className="px-6 py-4">
-                            <span className={`text-[10px] font-mono uppercase tracking-wider ${log.on_chain ? 'text-emerald-400' : 'text-amber-400'}`}>
-                              {log.on_chain ? `Block ${log.block_number}` : 'Buffer'}
-                            </span>
+                            {log.on_chain ? (
+                              <a 
+                                href={`https://polkadot.js.org/apps/?rpc=ws%3A%2F%2F127.0.0.1%3A9988#/explorer/query/${log.block_number}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="text-[10px] font-mono uppercase tracking-wider text-emerald-400 hover:text-emerald-300 hover:underline transition-colors flex items-center gap-1"
+                                title="Verify UserActivityHistory in Developer -> Chain State"
+                              >
+                                Block {log.block_number}
+                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 6H6a2 2 0 00-2 2v10a2 2 0 002 2h10a2 2 0 002-2v-4M14 4h6m0 0v6m0-6L10 14" />
+                                </svg>
+                              </a>
+                            ) : (
+                              <span className="text-[10px] font-mono uppercase tracking-wider text-amber-400">
+                                Buffer
+                              </span>
+                            )}
                           </td>
 
                           {/* Fingerprint */}
@@ -362,7 +378,7 @@ export default function AuditLogs() {
                             <div className="flex flex-col">
                               <span className="text-neutral-300 capitalize">{parseDevice(log.user_agent)}</span>
                               <span className="text-neutral-500 text-[10px] font-mono tracking-wider mt-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                                IP: {log.ip_address || 'Hidden'}
+                                IP: {log.ip_address === '::1' ? '127.0.0.1' : (log.ip_address || 'Hidden')}
                               </span>
                             </div>
                           </td>

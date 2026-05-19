@@ -140,7 +140,7 @@ export default async function HashesPage() {
                     <div className="relative">
                       <div className="text-[9px] uppercase tracking-[0.2em] text-neutral-500 mb-2 pl-4 border-l border-white/10">PREV_HASH</div>
                       <div className="font-mono text-xs text-neutral-400 break-all pl-4 border-l border-white/10 group-hover:border-white/30 transition-colors">
-                        {log.previous_hash}
+                        {log.previous_hash === 'GENESIS' ? log.previous_hash : `0x${log.previous_hash}`}
                       </div>
                     </div>
 
@@ -155,10 +155,7 @@ export default async function HashesPage() {
                     <div className="relative">
                       <div className="text-[9px] uppercase tracking-[0.2em] text-cyan-500/70 mb-2 pl-4 border-l-2 border-cyan-500/30 group-hover:border-cyan-400 transition-colors">CURR_HASH</div>
                       <div className="font-mono text-xs md:text-sm text-white break-all pl-4 border-l-2 border-cyan-500/30 group-hover:border-cyan-400 group-hover:text-cyan-50 shadow-[0_0_30px_rgba(34,211,238,0)] group-hover:shadow-[0_0_30px_rgba(34,211,238,0.1)] transition-all duration-300">
-                        {log.current_hash}
-                        {log.chain_hash && (
-                          <span className="block text-[9px] text-cyan-500/60 mt-1">chain: {log.chain_hash}</span>
-                        )}
+                        0x{log.current_hash}
                       </div>
                     </div>
                   </div>

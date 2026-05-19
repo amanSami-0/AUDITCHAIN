@@ -34,11 +34,16 @@ function submitToChain(logRow, payload) {
     const quantity = data.visit_count || data.attempt_count || 1;
     const userId = Number(data.user_id) || 0;
 
+    let finalActivityName = data.action || 'audit_log';
+    if (data.attribute_name) {
+        finalActivityName = `${finalActivityName} -> ${data.attribute_name} modified`;
+    }
+
     return new Promise((resolve) => {
         api.tx.auditChain
             .submitAuditProof(
                 Array.from(hashBytes),
-                toBoundedBytes(data.action || 'audit_log'),
+                toBoundedBytes(finalActivityName),
                 quantity,
                 userId,
                 toBoundedBytes(data.ip_address),
