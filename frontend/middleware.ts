@@ -5,7 +5,7 @@ export function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   console.log(`--- Middleware checking: ${pathname} ---`);
 
-  const protectedRoutes = ['/profile', '/audit', '/hashes', '/settings', '/update'];
+  const protectedRoutes = ['/profile', '/hashes', '/settings', '/update'];
   const isProtectedRoute = protectedRoutes.some((route) => pathname.startsWith(route));
 
   if (isProtectedRoute) {
@@ -16,6 +16,21 @@ export function middleware(request: NextRequest) {
       console.log(`Redirecting unauthorized user from ${pathname} to /login`);
       const url = request.nextUrl.clone();
       url.pathname = '/login';
+      return NextResponse.redirect(url);
+    }
+  }
+
+  const devProtectedRoutes = ['/audit', '/dev/access-logs', '/dev/admin', '/dev/dashboard'];
+  const isDevRoute = devProtectedRoutes.some((route) => pathname.startsWith(route));
+
+  if (isDevRoute) {
+    const devToken = request.cookies.get('audit_token');
+    console.log(`Dev Protected Route: ${pathname} | Dev Token status: ${devToken ? 'Found' : 'Not Found'}`);
+
+    if (!devToken) {
+      console.log(`Redirecting unauthorized dev from ${pathname} to /dev/login`);
+      const url = request.nextUrl.clone();
+      url.pathname = '/dev/login';
       return NextResponse.redirect(url);
     }
   }
@@ -38,5 +53,8 @@ export const config = {
     '/hashes/:path*',
     '/settings/:path*',
     '/update/:path*',
+    '/dev/access-logs/:path*',
+    '/dev/admin/:path*',
+    '/dev/dashboard/:path*',
   ],
 };

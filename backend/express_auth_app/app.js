@@ -364,8 +364,8 @@ async function startServer() {
         const { startDevPortal } = require("./audit-access-service/app");
         await startDevPortal(4000);
 
-        app.listen(3005, "127.0.0.1", () => {
-            console.log("🚀 Server running at http://127.0.0.1:3005");
+        app.listen(3005, "0.0.0.0", () => {
+            console.log("🚀 Server running at http://0.0.0.0:3005");
         });
 
     } catch (err) {

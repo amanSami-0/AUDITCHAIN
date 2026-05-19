@@ -386,7 +386,22 @@ exports.deleteDeveloper = async (req, res) => {
         status: "DELETED"
     });
 
-    if (req.accepts('json')) return res.json({ success: true });
+    if (req.accepts('json')) {
+        if (developerId === req.user?.id) {
+            res.clearCookie("audit_token", { path: "/" });
+            res.clearCookie("audit_session_token", { path: "/" });
+            res.clearCookie("audit_dev_logged_in", { path: "/" });
+            return res.status(401).json({ error: "Unauthorized" });
+        }
+        return res.json({ success: true });
+    }
+    
+    if (developerId === req.user?.id) {
+        res.clearCookie("audit_token", { path: "/" });
+        res.clearCookie("audit_session_token", { path: "/" });
+        res.clearCookie("audit_dev_logged_in", { path: "/" });
+        return res.redirect("/login");
+    }
     res.redirect("/admin");
 };
 
@@ -498,7 +513,22 @@ exports.kickUser = async (req, res) => {
             status: "KICKED"
         });
 
-        if (req.accepts('json')) return res.json({ success: true });
+        if (req.accepts('json')) {
+            if (sessionId === req.cookies?.audit_session_token || (!isSingle && developerId === req.user?.id)) {
+                res.clearCookie("audit_token", { path: "/" });
+                res.clearCookie("audit_session_token", { path: "/" });
+                res.clearCookie("audit_dev_logged_in", { path: "/" });
+                return res.status(401).json({ error: "Unauthorized" });
+            }
+            return res.json({ success: true });
+        }
+        
+        if (sessionId === req.cookies?.audit_session_token || (!isSingle && developerId === req.user?.id)) {
+            res.clearCookie("audit_token", { path: "/" });
+            res.clearCookie("audit_session_token", { path: "/" });
+            res.clearCookie("audit_dev_logged_in", { path: "/" });
+            return res.redirect("/login");
+        }
         res.redirect("/access-logs");
 
     } catch (err) {
@@ -607,7 +637,15 @@ exports.exportLog = async (req, res) => {
         // detection system -> never block export
         // =====================================
 
-        let devId = req.user?.id || null;
+        let devId = null;
+        try {
+            const token = req.cookies?.audit_token;
+            if (token) {
+                const jwt = require("jsonwebtoken");
+                const decoded = jwt.verify(token, "JWT_SECRET");
+                devId = decoded.id;
+            }
+        } catch(e) {}
 
         // =====================================
         // ✅ SAFE IP

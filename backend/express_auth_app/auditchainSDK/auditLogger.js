@@ -106,7 +106,8 @@ exports.init = async (sequelize) => {
 
     try {
         await cryptoWaitReady();
-        const provider = new WsProvider('ws://127.0.0.1:9988');
+        const wsUrl = process.env.WS_URL || 'ws://127.0.0.1:9988';
+        const provider = new WsProvider(wsUrl);
         api = await ApiPromise.create({ provider });
         const keyring = new Keyring({ type: 'sr25519' });
 

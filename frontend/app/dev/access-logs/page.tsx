@@ -31,7 +31,7 @@ export default function DevAccessLogs() {
       if (data.userMap) setUserMap(data.userMap);
     } catch (err: any) {
       if (err.message === "Unauthorized") {
-        router.push('/dev/login');
+        window.location.href = '/dev/login';
       }
     } finally {
       setLoading(false);
@@ -47,8 +47,12 @@ export default function DevAccessLogs() {
     try {
       await fetchApi(`/dev/kick/${sessionId}`);
       loadData();
-    } catch (e) {
-      alert("Failed to kick session");
+    } catch (e: any) {
+      if (e.message === "Unauthorized") {
+        window.location.href = '/dev/login';
+      } else {
+        alert("Failed to kick session");
+      }
     }
   };
 

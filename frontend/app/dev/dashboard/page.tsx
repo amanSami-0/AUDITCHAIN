@@ -87,9 +87,9 @@ export default function DevDashboard() {
             onClick={async () => {
               try {
                 await fetchApi('/dev/logout');
-                router.push('/dev/login');
+                window.location.href = '/dev/login';
               } catch (e) {
-                router.push('/dev/login');
+                window.location.href = '/dev/login';
               }
             }}
             className="px-6 py-3 bg-red-500/10 text-red-400 hover:bg-red-500/20 rounded-xl transition-colors font-semibold shadow-sm inline-flex items-center gap-2"

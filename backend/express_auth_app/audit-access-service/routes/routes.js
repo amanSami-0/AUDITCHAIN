@@ -76,7 +76,6 @@ router.get(
 
 router.get(
     "/export-log",
-    jwtVerify,
     controller.exportLog
 );
 
@@ -94,7 +93,15 @@ router.get("/verify-log", async (req, res) => {
         const DeveloperActivity =
             require("../models/DeveloperActivity");
 
-        const devId = req.user?.id || null;
+        let devId = null;
+        try {
+            const token = req.cookies?.audit_token;
+            if (token) {
+                const jwt = require("jsonwebtoken");
+                const decoded = jwt.verify(token, "JWT_SECRET");
+                devId = decoded.id;
+            }
+        } catch(e) {}
 
         const ip =
             req.headers["x-forwarded-for"] ||

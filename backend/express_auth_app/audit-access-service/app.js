@@ -154,9 +154,9 @@ async function startDevPortal(port = 4000) {
     await devPortalReady;
 
     return new Promise((resolve, reject) => {
-        const server = app.listen(port, "127.0.0.1", () => {
+        const server = app.listen(port, "0.0.0.0", () => {
             devPortalServer = server;
-            console.log(`🚀 Audit Access Service running at http://127.0.0.1:${port}/admin`);
+            console.log(`🚀 Audit Access Service running at http://0.0.0.0:${port}/admin`);
             resolve(server);
         });
 

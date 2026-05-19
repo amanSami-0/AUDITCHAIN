@@ -53,7 +53,7 @@ export default function DevAdmin() {
       if (data.users) setUsers(data.users);
     } catch (err: any) {
       if (err.message === "Unauthorized") {
-        router.push('/dev/login');
+        window.location.href = '/dev/login';
       }
       setErrorMsg("Failed to load developers");
     } finally {
@@ -96,8 +96,12 @@ export default function DevAdmin() {
     try {
       await fetchApi(`/dev/delete/${id}`);
       loadData();
-    } catch (e) {
-      alert("Failed to delete");
+    } catch (e: any) {
+      if (e.message === "Unauthorized") {
+        window.location.href = '/dev/login';
+      } else {
+        alert("Failed to delete");
+      }
     }
   };
 

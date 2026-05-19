@@ -43,6 +43,7 @@ export default function AuditLogs() {
     setVerifying(true);
     setVerifyMessage(null);
     try {
+      await fetchApi('/dev/verify-log').catch(() => { });
       const data = await fetchApi('/audit/verify');
       if (data.valid) {
         setVerifyMessage({
@@ -77,7 +78,8 @@ export default function AuditLogs() {
     }
   };
 
-  const handleExport = () => {
+  const handleExport = async () => {
+    await fetchApi('/dev/export-log').catch(() => { });
     window.location.href = "/api/audit/export";
   };
 
@@ -90,14 +92,14 @@ export default function AuditLogs() {
         // Aggregate Logs
         const aggregated: AggregatedAuditLog[] = [];
         const processAction = (log: any) => {
-            let action = log.action || 'UNKNOWN';
-            let attr = null;
-            if (action.includes('->')) {
-                const parts = action.split('->');
-                action = parts[0].trim();
-                attr = parts[1].trim();
-            }
-            return { action, attr };
+          let action = log.action || 'UNKNOWN';
+          let attr = null;
+          if (action.includes('->')) {
+            const parts = action.split('->');
+            action = parts[0].trim();
+            attr = parts[1].trim();
+          }
+          return { action, attr };
         };
 
         rawLogs.forEach(log => {
@@ -163,14 +165,14 @@ export default function AuditLogs() {
 
             const aggregated: AggregatedAuditLog[] = [];
             const processAction = (log: any) => {
-                let action = log.action || 'UNKNOWN';
-                let attr = null;
-                if (action.includes('->')) {
-                    const parts = action.split('->');
-                    action = parts[0].trim();
-                    attr = parts[1].trim();
-                }
-                return { action, attr };
+              let action = log.action || 'UNKNOWN';
+              let attr = null;
+              if (action.includes('->')) {
+                const parts = action.split('->');
+                action = parts[0].trim();
+                attr = parts[1].trim();
+              }
+              return { action, attr };
             };
 
             rawLogs.forEach(log => {
@@ -187,7 +189,7 @@ export default function AuditLogs() {
               const isSameAction = lastGroup.action === log.action;
               const isSameUser = lastGroup.user_id === log.user_id;
               const isWithin15Mins = timeDiff <= 15 * 60 * 1000;
-              
+
               if (isSameAction && isSameUser && isWithin15Mins) {
                 lastGroup.count += 1;
                 currentAttrs.forEach(a => {
@@ -235,8 +237,8 @@ export default function AuditLogs() {
     }
   };
 
-  const filteredLogs = logs.filter(log => 
-    log.action.toLowerCase().includes(searchQuery.toLowerCase()) || 
+  const filteredLogs = logs.filter(log =>
+    log.action.toLowerCase().includes(searchQuery.toLowerCase()) ||
     log.attributes.some(attr => attr.toLowerCase().includes(searchQuery.toLowerCase()))
   );
 
@@ -308,11 +310,11 @@ export default function AuditLogs() {
                 </svg>
                 View Cryptographic Hashes
               </Link>
-              <Link href="/profile" className="px-5 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-sm transition-colors backdrop-blur-md inline-flex items-center gap-2 text-neutral-300 hover:text-white">
+              <Link href="/dev/dashboard" className="px-5 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 rounded-lg text-sm transition-colors backdrop-blur-md inline-flex items-center gap-2 text-neutral-300 hover:text-white">
                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
                   <path strokeLinecap="round" strokeLinejoin="round" d="M10 19l-7-7m0 0l7-7m-7 7h18" />
                 </svg>
-                Back to Profile
+                Back to Dashboard
               </Link>
             </div>
           </div>
@@ -433,7 +435,7 @@ export default function AuditLogs() {
 
                           <td className="px-6 py-4">
                             {log.on_chain ? (
-                              <a 
+                              <a
                                 href={`https://polkadot.js.org/apps/?rpc=ws%3A%2F%2F127.0.0.1%3A9988#/explorer/query/${log.block_number}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
