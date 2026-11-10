@@ -1,70 +1,186 @@
-# AuditChain
+<div align="center">
 
-AuditChain is a modern, premium web application that combines a robust Express.js backend with a sleek, animated Next.js frontend. It features secure user authentication, profile management, and a real-time system configuration portal—all backed by an immutable Audit Ledger that tracks system events automatically.
+# 🔗 AuditChain
 
-## Project Structure
+**Tamper-evident audit logging for web apps — a hash-chained ledger, real-time dashboard, and brute-force protection, built into an Express + Next.js stack.**
 
-This repository is split into two main directories:
-- `/BACKEND/express_auth_app`: The Express.js backend, SQLite database, and custom Audit SDK.
-- `/frontend`: The Next.js 15+ frontend application featuring a dark mode, glassmorphic UI.
+![Next.js](https://img.shields.io/badge/Next.js-16-black?logo=nextdotjs)
+![React](https://img.shields.io/badge/React-19-61DAFB?logo=react&logoColor=black)
+![Express](https://img.shields.io/badge/Express-5-000000?logo=express)
+![SQLite](https://img.shields.io/badge/SQLite-Sequelize-003B57?logo=sqlite)
+![Tailwind](https://img.shields.io/badge/Tailwind-4-38BDF8?logo=tailwindcss&logoColor=white)
+
+<img src="screenshots/hero.png" alt="AuditChain – Audit Ledger" width="900" />
+
+</div>
 
 ---
+
+## 📖 Overview
+
+AuditChain pairs a sleek, animated **Next.js** frontend (dark, glassmorphic UI) with an **Express.js** backend and a custom **Audit SDK**. Every meaningful action in the app — signups, logins, profile edits, setting changes, even page visits — is intercepted automatically and written to an append-only ledger.
+
+Each ledger entry stores the **SHA-256 hash of the previous entry**, forming a chain. If any record is edited or deleted, every hash after it stops matching, making tampering visible.
+
+## ✨ Features
+
+| | |
+|---|---|
+| 🔐 **Authentication** | Signup, login, logout, password reset, JWT in an `httpOnly` cookie, bcrypt-hashed passwords |
+| 🧾 **Immutable Audit Ledger** | Every action logged with IP, user agent, status and a chained SHA-256 hash |
+| ⛓️ **Hash Chain Viewer** | Visualise the chain from the `GENESIS` block onward and see each `previous_hash → current_hash` link |
+| ⚡ **Real-time Updates** | The audit page refreshes live via Server-Sent Events (SSE) as new events arrive |
+| 🛡️ **Brute-force Protection** | 3 failed logins triggers a 10-minute block; failed attempts and blocks are themselves logged |
+| 🕵️ **Multi-device Attack Detection** | Logins for one account from too many IPs in a short window are flagged as `MULTI_DEVICE_ATTACK` |
+| 👤 **Profile Management** | View and update account details |
+| ⚙️ **System Configuration** | Toggle global settings (e.g. MFA, Maintenance Mode) — each change is written to the ledger |
+| 🧑‍💻 **Developer Access Portal** | Separate service with developer login, admin panel, access logs, session kick and unblock tools |
+
+## 📸 Screenshots
+
+### Authentication
+| Login | Sign up |
+|:---:|:---:|
+| <img src="screenshots/login.png" alt="Login page" width="440" /> | <img src="screenshots/signup.png" alt="Signup page" width="440" /> |
+
+### Audit Ledger (real-time)
+<img src="screenshots/audit.png" alt="Audit ledger page" width="900" />
+
+*Every action is captured automatically and appears live — no refresh needed.*
+
+### Hash Chain
+<img src="screenshots/hashes.png" alt="Hash chain visualisation" width="900" />
+
+*Each block references the hash of the one before it, starting from `GENESIS`.*
+
+### Profile & Settings
+| Profile | System settings |
+|:---:|:---:|
+| <img src="screenshots/profile.png" alt="Profile page" width="440" /> | <img src="screenshots/settings.png" alt="Settings page" width="440" /> |
+
+### Security in action
+| Account blocked after failed logins | Developer admin portal |
+|:---:|:---:|
+| <img src="screenshots/blocked.png" alt="Blocked login" width="440" /> | <img src="screenshots/dev-admin.png" alt="Developer admin" width="440" /> |
+
+## 🏗️ Architecture
+
+```
+┌────────────────────┐   fetch (cookie)   ┌──────────────────────────────┐
+│  Next.js Frontend  │ ─────────────────▶ │  Express API  (:3000)        │
+│  (:3001)           │ ◀───────────────── │  ├─ Auth routes + JWT        │
+│  middleware guards │                    │  └─ AuditChain SDK           │
+│  protected routes  │ ◀── SSE events ─── │      ├─ request middleware   │
+└────────────────────┘                    │      ├─ hash-chained logger  │
+                                          │      └─ /audit dashboard     │
+                                          └──────────────┬───────────────┘
+                                                         │
+                                              SQLite (users + audit.sqlite)
+
+┌──────────────────────────────┐
+│  Audit Access Service (:4000)│  Developer login, admin, access logs
+└──────────────────────────────┘
+```
+
+### How the hash chain works
+
+```js
+previous_hash = lastLog ? lastLog.current_hash : "GENESIS";
+current_hash  = sha256(JSON.stringify({ ...logData, previous_hash }));
+```
+
+Verifying integrity means recomputing each entry's hash and checking that it matches both its stored `current_hash` and the next entry's `previous_hash`.
+
+## 📁 Project Structure
+
+```
+.
+├── frontend/                       # Next.js app (App Router)
+│   ├── middleware.ts               # Redirects unauthenticated users to /login
+│   └── app/
+│       ├── login/  signup/  forgot/
+│       ├── profile/  update/  settings/
+│       ├── audit/  hashes/         # Ledger + hash chain views
+│       ├── dev/                    # Developer portal UI
+│       └── lib/api.ts              # API helper
+└── backend/express_auth_app/
+    ├── app.js                      # API entry point (:3000)
+    ├── controllers/  routes/  models/  middleware/
+    ├── auditchainSDK/              # The audit SDK
+    │   ├── middleware.js           # Request capture, login tracking, blocking
+    │   ├── auditLogger.js          # Hash-chained logging + SSE events
+    │   ├── hash.js                 # SHA-256 helper
+    │   └── dashboard.js            # /audit JSON + /audit/events (SSE)
+    └── audit-access-service/       # Developer access service (:4000)
+```
+
+## 🧰 Tech Stack
+
+- **Frontend:** Next.js, React, TypeScript, Tailwind CSS, GSAP, Motion, UA-Parser
+- **Backend:** Express.js, Sequelize ORM, SQLite3, JSON Web Tokens, bcryptjs
+- **Real-time:** Server-Sent Events
 
 ## 🚀 Getting Started
 
-To run the full AuditChain application locally, you will need to start both the backend server and the frontend development server.
+### Prerequisites
+- Node.js 18+ and npm
 
-### 1. Start the Backend (Express API)
+### 1. Start the backend
 
-The backend handles all authentication, database interactions, and the Audit logging SDK.
+```bash
+cd backend/express_auth_app
+npm install
+node app.js
+```
+The API starts on **http://localhost:3000** and creates the SQLite databases automatically.
 
-1. Open a new terminal.
-2. Navigate to the backend directory:
-   ```bash
-   cd "BACKEND/express_auth_app"
-   ```
-3. Install the required Node.js dependencies:
-   ```bash
-   npm install
-   ```
-4. Start the Express server:
-   ```bash
-   node app.js
-   ```
-   *(The backend server will start on `http://localhost:3000` and automatically initialize the local SQLite database).*
+### 2. Start the frontend
 
----
+In a **second** terminal:
 
-### 2. Start the Frontend (Next.js)
+```bash
+cd frontend
+npm install
+npm run dev -- -p 3001
+```
+Open **http://localhost:3001**.
 
-The frontend contains the premium UI and proxies API requests to the backend securely.
+> The backend's CORS is configured for `http://localhost:3001`, so run the frontend on that port.
 
-1. Open a **second** terminal window.
-2. Navigate to the frontend directory:
-   ```bash
-   cd frontend
-   ```
-3. Install the required Node.js dependencies:
-   ```bash
-   npm install
-   ```
-4. Start the Next.js development server:
-   ```bash
-   npm run dev
-   ```
-   *(The frontend will typically start on `http://localhost:3001` or `http://localhost:3000` depending on port availability. Check the terminal output for the exact local URL).*
+### 3. (Optional) Start the developer access service
 
----
+```bash
+cd backend/express_auth_app/audit-access-service
+npm install
+node app.js
+```
+Runs on **http://localhost:4000**.
 
-## 🌟 Features
+## 🧭 Usage
 
-Once both servers are running, open the frontend URL in your browser to experience the app:
+1. Create an account at `/signup`, then sign in at `/login`.
+2. View or edit your details at `/profile` and `/update`.
+3. Change global settings at `/settings`.
+4. Open `/audit` to watch your actions appear in the ledger live.
+5. Open `/hashes` to inspect the hash chain.
+6. Try entering a wrong password 3 times to see the account block and the `LOGIN_BLOCKED` event logged.
 
-1. **Authentication Flow**: Create an account via `/signup`, and then sign in at `/login`.
-2. **Profile Management**: View and edit your secure profile details at `/profile` and `/update`.
-3. **Environment Controls**: Toggle global security settings (like MFA or Maintenance Mode) at `/settings`.
-4. **Audit Intelligence**: Navigate to `/audit` to view the comprehensive, immutable ledger. Every action you take (logging in, updating a profile, changing a setting) is automatically intercepted by the backend SDK and logged here in real-time.
+## 🔌 API Reference
 
-## Tech Stack
-- **Frontend:** Next.js, React, Tailwind CSS, GSAP (Animations), UA-Parser
-- **Backend:** Express.js, Sequelize ORM, SQLite3, JSON Web Tokens (JWT)
+| Method | Endpoint | Auth | Description |
+|---|---|:---:|---|
+| POST | `/signup` | – | Create an account |
+| POST | `/login` | – | Log in (sets `token` cookie) |
+| POST | `/logout` | – | Clear the session cookie |
+| POST | `/forgot` | – | Reset password |
+| GET | `/profile` | ✅ | Get current user |
+| POST | `/update` | ✅ | Update profile |
+| POST | `/settings` | ✅ | Update system settings (logged to ledger) |
+| POST | `/delete` | ✅ | Delete account |
+| GET | `/audit` | – | Latest 100 audit entries (JSON) |
+| GET | `/audit/events` | – | SSE stream of new log events |
+
+
+## 📄 License
+
+Released under the [ISC License](LICENSE).
