@@ -56,7 +56,7 @@ Each ledger entry stores the **SHA-256 hash of the previous entry**, forming a c
 ### Profile & Settings
 | Profile | System settings |
 |:---:|:---:|
-| <img src="screenshots/profile.png" alt="Profile page" width="440" /> | <img src="screenshots/settings.png" alt="Settings page" width="440" /> |
+| <img src="screenshots/profile.png" alt="Profile page" width="440" /> | <img src="screenshots/settings.png" alt="Settings page" width="440" height="600" /> |
 
 ### Developer Access Portal
 | Operator access logs | Developer admin |
