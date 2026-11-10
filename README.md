@@ -58,10 +58,12 @@ Each ledger entry stores the **SHA-256 hash of the previous entry**, forming a c
 |:---:|:---:|
 | <img src="screenshots/profile.png" alt="Profile page" width="440" /> | <img src="screenshots/settings.png" alt="Settings page" width="440" /> |
 
-### Security in action
-| Account blocked after failed logins | Developer admin portal |
+### Developer Access Portal
+| Operator access logs | Developer admin |
 |:---:|:---:|
-| <img src="screenshots/blocked.png" alt="Blocked login" width="440" /> | <img src="screenshots/dev-admin.png" alt="Developer admin" width="440" /> |
+| <img src="screenshots/dev-access-logs.png" alt="Operator access logs" width="440" /> | <img src="screenshots/dev-admin.png" alt="Developer admin" width="440" /> |
+
+*Monitor developer sign-ins by time, IP and device, and terminate any active session with one click.*
 
 ## 🏗️ Architecture
 
@@ -180,6 +182,13 @@ Runs on **http://localhost:4000**.
 | GET | `/audit` | – | Latest 100 audit entries (JSON) |
 | GET | `/audit/events` | – | SSE stream of new log events |
 
+## 🗺️ Roadmap
+
+- [ ] Built-in "Verify chain integrity" button on the hash page
+- [ ] Move secrets (JWT, session) to environment variables
+- [ ] Persist the ledger across restarts
+- [ ] Docker Compose setup
+- [ ] Automated tests
 
 ## 📄 License
 
